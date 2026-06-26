@@ -145,6 +145,30 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--navy);flex-shrink
 .toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:8px 18px;border-radius:20px;font-size:13px;z-index:200;opacity:0;transition:opacity 0.3s;pointer-events:none;}
 .toast.show{opacity:1;}
 
+
+/* OKR Tracker */
+.okr-year-tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap;}
+.okr-fn-block{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:16px;}
+.okr-fn-header{padding:10px 14px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;}
+.okr-fn-title{color:#fff;font-size:13px;font-weight:600;}
+.okr-fn-body{padding:0 14px 12px;}
+.okr-row{padding:10px 0;border-bottom:1px solid var(--border);}
+.okr-row:last-child{border-bottom:none;}
+.okr-name{font-size:13px;font-weight:500;color:var(--text);margin-bottom:8px;}
+.okr-quarters{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.okr-q{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px;text-align:center;}
+.okr-q-label{font-size:10px;font-weight:600;color:var(--text3);margin-bottom:6px;text-transform:uppercase;}
+.okr-q-rag{display:flex;justify-content:center;gap:4px;margin-bottom:6px;}
+.okr-q-rag-btn{width:18px;height:18px;border-radius:50%;border:2px solid transparent;cursor:pointer;transition:transform 0.1s;}
+.okr-q-rag-btn:hover{transform:scale(1.2);}
+.okr-q-rag-btn.active{border-color:var(--text);}
+.okr-q-progress{font-size:11px;color:var(--text2);margin-bottom:4px;}
+.okr-q-track{height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;}
+.okr-q-fill{height:100%;border-radius:2px;transition:width 0.3s;}
+.okr-add-btn{margin-top:10px;width:100%;padding:7px;font-size:12px;background:var(--bg2);border:1px dashed var(--border);border-radius:var(--radius-sm);color:var(--text2);cursor:pointer;}
+.okr-add-btn:hover{background:var(--bg3);}
+.okr-empty{font-size:13px;color:var(--text3);padding:12px 0;text-align:center;}
+
 /* Lock screen */
 .lock-screen{position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;background:#1e2d3d;z-index:9999;display:flex;align-items:center;justify-content:center;}
 .lock-box{background:var(--bg);border-radius:16px;padding:32px 28px;width:320px;max-width:90vw;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.4);}
@@ -212,6 +236,7 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--navy);flex-shrink
   <button class="nav-tab" onclick="setView('strategy',this)">Strategy</button>
   <button class="nav-tab" onclick="setView('actions',this)">Actions</button>
   <button class="nav-tab" onclick="setView('deadlines',this)">Deadlines</button>
+  <button class="nav-tab" onclick="setView('okrs',this)">OKRs</button>
 </nav>
 
 <div class="main">
@@ -219,10 +244,57 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--navy);flex-shrink
   <div id="viewStrategy" style="display:none;"></div>
   <div id="viewActions" style="display:none;"></div>
   <div id="viewDeadlines" style="display:none;"></div>
+  <div id="viewOkrs" style="display:none;"></div>
 </div>
 
 <button class="fab" id="fab" onclick="handleFab()" aria-label="Add item">+</button>
 <div class="toast" id="toast"></div>
+
+
+<!-- OKR modal -->
+<div id="okrModal" style="display:none;">
+  <div class="modal-backdrop" onclick="if(event.target===this)closeOkrModal()">
+    <div class="modal-sheet"><div class="modal-handle"></div>
+      <button class="modal-close" onclick="closeOkrModal()">&#10005;</button>
+      <div class="modal-title" id="okrModalTitle">Add OKR</div>
+      <div class="form-group"><label class="form-label">OKR name / objective</label><input type="text" class="form-input" id="okrName" placeholder="e.g. Grow new logo revenue by 40%"></div>
+      <div class="form-group"><label class="form-label">Business function</label><select class="form-input" id="okrFn"></select></div>
+      <div class="form-group"><label class="form-label">Year</label><select class="form-input" id="okrYear"></select></div>
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="closeOkrModal()">Cancel</button>
+        <button id="okrDeleteBtn" class="btn-danger" style="display:none;" onclick="deleteCurrentOkr()">Delete</button>
+        <button class="btn-primary" onclick="saveOkr()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- OKR quarter edit modal -->
+<div id="okrQModal" style="display:none;">
+  <div class="modal-backdrop" onclick="if(event.target===this)closeOkrQModal()">
+    <div class="modal-sheet"><div class="modal-handle"></div>
+      <button class="modal-close" onclick="closeOkrQModal()">&#10005;</button>
+      <div class="modal-title" id="okrQModalTitle">Update Q1</div>
+      <div class="form-group"><label class="form-label">RAG status</label>
+        <select class="form-input" id="okrQRag">
+          <option value="G">Green — on track</option>
+          <option value="A">Amber — attention</option>
+          <option value="R">Red — at risk</option>
+          <option value="N">Not started</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Progress — <span id="okrQProgressVal">0</span>%</label>
+        <input type="range" class="progress-slider" id="okrQProgress" min="0" max="100" value="0" step="5" oninput="document.getElementById('okrQProgressVal').textContent=this.value">
+      </div>
+      <div class="form-group"><label class="form-label">Notes (optional)</label><input type="text" class="form-input" id="okrQNotes" placeholder="Any context for this quarter..."></div>
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="closeOkrQModal()">Cancel</button>
+        <button class="btn-primary" onclick="saveOkrQ()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- Function modal -->
 <div id="fnModal" style="display:none;">
@@ -377,14 +449,16 @@ async function loadFromSupabase(){
   setSyncStatus('syncing');
   try{
     // Ensure tables exist by attempting to load — will fail gracefully if not set up yet
-    const [ragRows,actionRows,strategyRows]=await Promise.all([
-      sbGet('ceo_rags'),sbGet('ceo_actions'),sbGet('ceo_strategy')
+    const [ragRows,actionRows,strategyRows,okrRows]=await Promise.all([
+      sbGet('ceo_rags'),sbGet('ceo_actions'),sbGet('ceo_strategy'),sbGet('ceo_okrs')
     ]);
     // Rags & updates
     FNS.forEach(f=>{state.rags[f.id]='G';state.updates[f.id]='';});
     ragRows.forEach(r=>{state.rags[r.fn_id]=r.rag||'G';state.updates[r.fn_id]=r.update_text||'';});
     // Actions
     state.actions=actionRows.map(r=>({id:r.id,fn:r.fn,text:r.text,due:r.due||'',priority:r.priority||'Medium',rag:r.rag||'G',done:r.done||false}));
+    // OKRs
+    state.okrs=okrRows.map(r=>({id:r.id,fn:r.fn,name:r.name,year:r.year,quarters:r.quarters||{Q1:{rag:'N',progress:0,notes:''},Q2:{rag:'N',progress:0,notes:''},Q3:{rag:'N',progress:0,notes:''},Q4:{rag:'N',progress:0,notes:''}}}));
     // Strategy
     state.strategy=strategyRows.map(r=>({id:r.id,name:r.name,type:r.type||'initiative',rag:r.rag||'G',due:r.due||'',priority:r.priority||'Medium',progress:r.progress||0,owner:r.owner||null,notes:r.notes||''}));
     setSyncStatus('ok');
@@ -605,16 +679,17 @@ function render(){
   if(currentView==='wheel')renderWheel();
   else if(currentView==='strategy')renderStrategy();
   else if(currentView==='actions')renderActions();
+  else if(currentView==='okrs')renderOkrs();
   else renderDeadlines();
 }
 function setView(v,btn){
   currentView=v;
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   btn.classList.add('active');
-  ['wheel','strategy','actions','deadlines'].forEach(x=>{
+  ['wheel','strategy','actions','deadlines','okrs'].forEach(x=>{
     document.getElementById('view'+x.charAt(0).toUpperCase()+x.slice(1)).style.display=x===v?'block':'none';
   });
-  document.getElementById('fab').style.display=v==='deadlines'?'none':'flex';
+  document.getElementById('fab').style.display=(v==='deadlines'||v==='okrs')?'none':'flex';
   render();
 }
 function handleFab(){if(currentView==='strategy')openStrategyModal(null);else openAddAction(null);}
@@ -757,6 +832,166 @@ async function importAI(actions){
   saveLocal();closeAI();render();
   await Promise.all(toSave.map(a=>saveActionToSupabase(a)));
   showToast(`${toSave.length} action${toSave.length!==1?'s':''} imported`);
+}
+
+// ─── OKR TRACKER ─────────────────────────────────────────
+let okrYear = new Date().getFullYear();
+let editOkrId = null;
+let editOkrQData = null;
+const QUARTERS = ['Q1','Q2','Q3','Q4'];
+
+async function loadOkrs(){
+  try{
+    const rows = await sbGet('ceo_okrs');
+    state.okrs = rows.map(r=>({
+      id:r.id, fn:r.fn, name:r.name, year:r.year,
+      quarters: r.quarters || {Q1:{rag:'N',progress:0,notes:''},Q2:{rag:'N',progress:0,notes:''},Q3:{rag:'N',progress:0,notes:''},Q4:{rag:'N',progress:0,notes:''}}
+    }));
+  } catch(e){ if(!state.okrs) state.okrs=[]; }
+}
+async function saveOkrToSupabase(okr){
+  setSyncStatus('syncing');
+  try{ await sbUpsert('ceo_okrs',{id:okr.id,fn:okr.fn,name:okr.name,year:okr.year,quarters:okr.quarters}); setSyncStatus('ok'); }
+  catch(e){ setSyncStatus('error'); saveLocal(); }
+}
+async function deleteOkrFromSupabase(id){
+  setSyncStatus('syncing');
+  try{ await sbDelete('ceo_okrs',id); setSyncStatus('ok'); }
+  catch(e){ setSyncStatus('error'); }
+}
+
+function renderOkrs(){
+  if(!state.okrs) state.okrs=[];
+  const yearOkrs = state.okrs.filter(o=>o.year===okrYear);
+  const years = [...new Set([new Date().getFullYear(), new Date().getFullYear()+1, ...state.okrs.map(o=>o.year)])].sort();
+
+  let html = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+    <div class="okr-year-tabs">
+      ${years.map(y=>`<button class="filter-chip ${y===okrYear?'active':''}" onclick="setOkrYear(${y})">${y}</button>`).join('')}
+    </div>
+    <button class="btn-primary" style="font-size:12px;padding:6px 14px;" onclick="openOkrModal(null)">+ Add OKR</button>
+  </div>`;
+
+  if(!yearOkrs.length){
+    html += '<div class="empty-state">No OKRs for this year yet.<br>Tap + Add OKR to get started.</div>';
+  } else {
+    FNS.forEach(f=>{
+      const fnOkrs = yearOkrs.filter(o=>o.fn===f.id);
+      if(!fnOkrs.length) return;
+      html += `<div class="okr-fn-block">
+        <div class="okr-fn-header" style="background:${f.color};">
+          <span class="okr-fn-title">${f.label}</span>
+          <span style="color:rgba(255,255,255,0.7);font-size:11px;">${fnOkrs.length} OKR${fnOkrs.length!==1?'s':''}</span>
+        </div>
+        <div class="okr-fn-body">
+          ${fnOkrs.map(okr=>`
+            <div class="okr-row">
+              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
+                <div class="okr-name">${okr.name}</div>
+                <button onclick="openOkrModal('${okr.id}')" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:12px;padding:0;flex-shrink:0;">&#9998;</button>
+              </div>
+              <div class="okr-quarters">
+                ${QUARTERS.map(q=>{
+                  const qd = okr.quarters[q]||{rag:'N',progress:0,notes:''};
+                  const pc = progressColor(qd.progress);
+                  const rc = qd.rag==='R'?'var(--rag-r)':qd.rag==='A'?'var(--rag-a)':qd.rag==='G'?'var(--rag-g)':'var(--text3)';
+                  return `<div class="okr-q" onclick="openOkrQModal('${okr.id}','${q}')">
+                    <div class="okr-q-label">${q}</div>
+                    <div style="width:10px;height:10px;border-radius:50%;background:${rc};margin:0 auto 6px;"></div>
+                    <div class="okr-q-progress">${qd.progress}%</div>
+                    <div class="okr-q-track"><div class="okr-q-fill" style="width:${qd.progress}%;background:${pc};"></div></div>
+                  </div>`;
+                }).join('')}
+              </div>
+            </div>`).join('')}
+          <button class="okr-add-btn" onclick="openOkrModalForFn('${f.id}')">+ Add OKR for ${f.label}</button>
+        </div>
+      </div>`;
+    });
+
+    // Any OKRs for functions not in FNS
+    const otherOkrs = yearOkrs.filter(o=>!FNS.find(f=>f.id===o.fn));
+    if(otherOkrs.length){
+      html += `<div class="okr-fn-block"><div class="okr-fn-header" style="background:var(--text3);"><span class="okr-fn-title">Other</span></div><div class="okr-fn-body">${otherOkrs.map(okr=>`<div class="okr-row"><div class="okr-name">${okr.name}</div></div>`).join('')}</div></div>`;
+    }
+  }
+  document.getElementById('viewOkrs').innerHTML = html;
+}
+
+function setOkrYear(y){ okrYear=y; renderOkrs(); }
+
+function openOkrModal(id){
+  editOkrId = id||null;
+  const okr = id ? state.okrs.find(o=>o.id===id) : null;
+  document.getElementById('okrModalTitle').textContent = okr ? 'Edit OKR' : 'Add OKR';
+  document.getElementById('okrName').value = okr ? okr.name : '';
+  const fnSel = document.getElementById('okrFn');
+  fnSel.innerHTML = FNS.map(f=>`<option value="${f.id}" ${okr&&okr.fn===f.id?'selected':''}>${f.label}</option>`).join('');
+  const yearSel = document.getElementById('okrYear');
+  const years = [new Date().getFullYear()-1, new Date().getFullYear(), new Date().getFullYear()+1];
+  yearSel.innerHTML = years.map(y=>`<option value="${y}" ${okr&&okr.year===y?'selected':y===new Date().getFullYear()?'selected':''}>${y}</option>`).join('');
+  document.getElementById('okrDeleteBtn').style.display = okr ? 'block' : 'none';
+  document.getElementById('okrModal').style.display = 'block';
+}
+
+function openOkrModalForFn(fnId){
+  openOkrModal(null);
+  document.getElementById('okrFn').value = fnId;
+}
+
+function closeOkrModal(){ document.getElementById('okrModal').style.display='none'; editOkrId=null; }
+
+async function saveOkr(){
+  const name = document.getElementById('okrName').value.trim();
+  if(!name) return;
+  const okr = {
+    id: editOkrId||uid(),
+    fn: document.getElementById('okrFn').value,
+    name,
+    year: parseInt(document.getElementById('okrYear').value),
+    quarters: editOkrId ? state.okrs.find(o=>o.id===editOkrId)?.quarters || {} : {}
+  };
+  QUARTERS.forEach(q=>{ if(!okr.quarters[q]) okr.quarters[q]={rag:'N',progress:0,notes:''}; });
+  if(editOkrId){ const idx=state.okrs.findIndex(o=>o.id===editOkrId); if(idx>-1) state.okrs[idx]=okr; }
+  else state.okrs.push(okr);
+  saveLocal(); closeOkrModal(); renderOkrs();
+  await saveOkrToSupabase(okr); showToast('OKR saved');
+}
+
+async function deleteCurrentOkr(){
+  if(!editOkrId) return;
+  state.okrs = state.okrs.filter(o=>o.id!==editOkrId);
+  saveLocal(); closeOkrModal(); renderOkrs();
+  await deleteOkrFromSupabase(editOkrId); showToast('OKR deleted');
+}
+
+function openOkrQModal(okrId, q){
+  const okr = state.okrs.find(o=>o.id===okrId);
+  if(!okr) return;
+  const qd = okr.quarters[q]||{rag:'N',progress:0,notes:''};
+  editOkrQData = {okrId, q};
+  document.getElementById('okrQModalTitle').textContent = `${okr.name.slice(0,30)}${okr.name.length>30?'…':''} — ${q}`;
+  document.getElementById('okrQRag').value = qd.rag||'N';
+  document.getElementById('okrQProgress').value = qd.progress||0;
+  document.getElementById('okrQProgressVal').textContent = qd.progress||0;
+  document.getElementById('okrQNotes').value = qd.notes||'';
+  document.getElementById('okrQModal').style.display = 'block';
+}
+
+function closeOkrQModal(){ document.getElementById('okrQModal').style.display='none'; editOkrQData=null; }
+
+async function saveOkrQ(){
+  if(!editOkrQData) return;
+  const {okrId, q} = editOkrQData;
+  const okr = state.okrs.find(o=>o.id===okrId);
+  if(!okr) return;
+  okr.quarters[q] = {
+    rag: document.getElementById('okrQRag').value,
+    progress: parseInt(document.getElementById('okrQProgress').value)||0,
+    notes: document.getElementById('okrQNotes').value.trim()
+  };
+  saveLocal(); closeOkrQModal(); renderOkrs();
+  await saveOkrToSupabase(okr); showToast('Quarter updated');
 }
 
 // ─── PASSWORD LOCK ───────────────────────────────────────
