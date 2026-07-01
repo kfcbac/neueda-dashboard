@@ -169,6 +169,31 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--navy);flex-shrink
 .okr-add-btn:hover{background:var(--bg3);}
 .okr-empty{font-size:13px;color:var(--text3);padding:12px 0;text-align:center;}
 
+
+/* Clients table */
+.clients-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;}
+.clients-search{padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;background:var(--bg);color:var(--text);outline:none;width:200px;}
+.clients-search:focus{border-color:var(--blue);}
+.clients-table-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius);}
+.clients-table{width:100%;border-collapse:collapse;min-width:600px;}
+.clients-table th{padding:9px 12px;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.05em;background:var(--bg2);border-bottom:1px solid var(--border);text-align:left;white-space:nowrap;cursor:pointer;user-select:none;}
+.clients-table th:hover{color:var(--text2);}
+.clients-table th .sort-arrow{margin-left:4px;opacity:0.4;font-size:10px;}
+.clients-table th.sorted .sort-arrow{opacity:1;color:var(--orange);}
+.clients-table td{padding:9px 12px;font-size:13px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle;}
+.clients-table tr:last-child td{border-bottom:none;}
+.clients-table tr.client-row{cursor:pointer;transition:background 0.1s;}
+.clients-table tr.client-row:hover{background:var(--bg2);}
+.clients-table tr.done-row{opacity:0.45;}
+.client-name-cell{font-weight:500;}
+.client-action-cell{max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.client-due-urgent{color:var(--rag-r);font-weight:500;font-size:12px;}
+.client-due-soon{color:var(--rag-a);font-weight:500;font-size:12px;}
+.client-due-ok{color:var(--rag-g);font-size:12px;}
+.client-due-none{color:var(--text3);font-size:12px;}
+.clients-empty{text-align:center;padding:32px;color:var(--text3);font-size:13px;}
+.done-check{accent-color:var(--navy);width:15px;height:15px;cursor:pointer;}
+
 /* Lock screen */
 .lock-screen{position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;background:#1e2d3d;z-index:9999;display:flex;align-items:center;justify-content:center;}
 .lock-box{background:var(--bg);border-radius:16px;padding:32px 28px;width:320px;max-width:90vw;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.4);}
@@ -192,6 +217,59 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--navy);flex-shrink
 </style>
 </head>
 <body>
+
+
+<!-- Client action modal -->
+<div id="clientModal" style="display:none;">
+  <div class="modal-backdrop" onclick="if(event.target===this)closeClientModal()">
+    <div class="modal-sheet" style="position:relative;"><div class="modal-handle"></div>
+      <button class="modal-close" onclick="closeClientModal()">&#10005;</button>
+      <div class="modal-title" id="clientModalTitle">Add client action</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Client</label>
+          <input type="text" class="form-input" id="cClient" placeholder="e.g. HSBC" list="clientNameList">
+          <datalist id="clientNameList"></datalist>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Deal / Project</label>
+          <input type="text" class="form-input" id="cDeal" placeholder="e.g. Grad Programme FY27">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Action</label>
+        <input type="text" class="form-input" id="cAction" placeholder="What needs to happen?">
+      </div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label class="form-label">Owner</label>
+          <select class="form-input" id="cOwner"></select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">RAG status</label>
+          <select class="form-input" id="cRag">
+            <option value="G">Green — on track</option>
+            <option value="A">Amber — attention</option>
+            <option value="R">Red — at risk</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Due date</label>
+        <input type="date" class="form-input" id="cDue">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea class="form-input" id="cNotes" rows="2" placeholder="Any additional context..."></textarea>
+      </div>
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="closeClientModal()">Cancel</button>
+        <button id="cDeleteBtn" class="btn-danger" style="display:none;" onclick="deleteCurrentClient()">Delete</button>
+        <button class="btn-primary" onclick="saveClientAction()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- Lock screen -->
 <div id="lockScreen" class="lock-screen">
@@ -237,6 +315,7 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--navy);flex-shrink
   <button class="nav-tab" onclick="setView('actions',this)">Actions</button>
   <button class="nav-tab" onclick="setView('deadlines',this)">Deadlines</button>
   <button class="nav-tab" onclick="setView('okrs',this)">OKRs</button>
+  <button class="nav-tab" onclick="setView('clients',this)">Clients</button>
 </nav>
 
 <div class="main">
@@ -245,6 +324,7 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--navy);flex-shrink
   <div id="viewActions" style="display:none;"></div>
   <div id="viewDeadlines" style="display:none;"></div>
   <div id="viewOkrs" style="display:none;"></div>
+  <div id="viewClients" style="display:none;"></div>
 </div>
 
 <button class="fab" id="fab" onclick="handleFab()" aria-label="Add item">+</button>
@@ -449,8 +529,8 @@ async function loadFromSupabase(){
   setSyncStatus('syncing');
   try{
     // Ensure tables exist by attempting to load — will fail gracefully if not set up yet
-    const [ragRows,actionRows,strategyRows,okrRows]=await Promise.all([
-      sbGet('ceo_rags'),sbGet('ceo_actions'),sbGet('ceo_strategy'),sbGet('ceo_okrs')
+    const [ragRows,actionRows,strategyRows,okrRows,clientRows]=await Promise.all([
+      sbGet('ceo_rags'),sbGet('ceo_actions'),sbGet('ceo_strategy'),sbGet('ceo_okrs'),sbGet('ceo_clients')
     ]);
     // Rags & updates
     FNS.forEach(f=>{state.rags[f.id]='G';state.updates[f.id]='';});
@@ -459,6 +539,8 @@ async function loadFromSupabase(){
     state.actions=actionRows.map(r=>({id:r.id,fn:r.fn,text:r.text,due:r.due||'',priority:r.priority||'Medium',rag:r.rag||'G',done:r.done||false}));
     // OKRs
     state.okrs=okrRows.map(r=>({id:r.id,fn:r.fn,name:r.name,year:r.year,quarters:r.quarters||{Q1:{rag:'N',progress:0,notes:''},Q2:{rag:'N',progress:0,notes:''},Q3:{rag:'N',progress:0,notes:''},Q4:{rag:'N',progress:0,notes:''}}}));
+    // Clients
+    state.clients=clientRows.map(r=>({id:r.id,client:r.client,deal:r.deal||'',action:r.action,owner:r.owner||null,rag:r.rag||'G',due:r.due||'',notes:r.notes||'',done:r.done||false}));
     // Strategy
     state.strategy=strategyRows.map(r=>({id:r.id,name:r.name,type:r.type||'initiative',rag:r.rag||'G',due:r.due||'',priority:r.priority||'Medium',progress:r.progress||0,owner:r.owner||null,notes:r.notes||''}));
     setSyncStatus('ok');
@@ -680,16 +762,19 @@ function render(){
   else if(currentView==='strategy')renderStrategy();
   else if(currentView==='actions')renderActions();
   else if(currentView==='okrs')renderOkrs();
+  else if(currentView==='clients')renderClients();
   else renderDeadlines();
 }
 function setView(v,btn){
   currentView=v;
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   btn.classList.add('active');
-  ['wheel','strategy','actions','deadlines','okrs'].forEach(x=>{
+  ['wheel','strategy','actions','deadlines','okrs','clients'].forEach(x=>{
     document.getElementById('view'+x.charAt(0).toUpperCase()+x.slice(1)).style.display=x===v?'block':'none';
   });
   document.getElementById('fab').style.display=(v==='deadlines'||v==='okrs')?'none':'flex';
+  if(v==='clients'){document.getElementById('fab').style.display='flex';document.getElementById('fab').onclick=()=>openClientModal(null);}
+  else document.getElementById('fab').onclick=()=>handleFab();
   render();
 }
 function handleFab(){if(currentView==='strategy')openStrategyModal(null);else openAddAction(null);}
@@ -992,6 +1077,170 @@ async function saveOkrQ(){
   };
   saveLocal(); closeOkrQModal(); renderOkrs();
   await saveOkrToSupabase(okr); showToast('Quarter updated');
+}
+
+// ─── CLIENTS ──────────────────────────────────────────────
+const PRESET_CLIENTS = [
+  'HSBC','Morgan Stanley','Fidelity Investments','Citigroup','JPMorgan Chase',
+  'NatWest','Northern Trust','Bloomberg','LM (Lockheed Martin)','NTT',
+  'LEAP','LIT','Zishi'
+];
+
+let clientSortCol = 'due';
+let clientSortAsc = true;
+let clientSearch = '';
+let editClientId = null;
+
+async function loadClients(){
+  try{
+    const rows = await sbGet('ceo_clients');
+    state.clients = rows.map(r=>({
+      id:r.id, client:r.client, deal:r.deal||'', action:r.action,
+      owner:r.owner||null, rag:r.rag||'G', due:r.due||'', notes:r.notes||'', done:r.done||false
+    }));
+  } catch(e){ if(!state.clients) state.clients=[]; }
+}
+
+async function saveClientToSupabase(item){
+  setSyncStatus('syncing');
+  try{ await sbUpsert('ceo_clients',{id:item.id,client:item.client,deal:item.deal,action:item.action,owner:item.owner||null,rag:item.rag,due:item.due||null,notes:item.notes,done:item.done}); setSyncStatus('ok'); }
+  catch(e){ setSyncStatus('error'); saveLocal(); }
+}
+async function deleteClientFromSupabase(id){
+  setSyncStatus('syncing');
+  try{ await sbDelete('ceo_clients',id); setSyncStatus('ok'); }
+  catch(e){ setSyncStatus('error'); }
+}
+
+function renderClients(){
+  if(!state.clients) state.clients=[];
+  const knownClients = [...new Set([...PRESET_CLIENTS, ...state.clients.map(c=>c.client)])].sort();
+  document.getElementById('clientNameList').innerHTML = knownClients.map(c=>`<option value="${c}">`).join('');
+
+  let rows = [...state.clients];
+  if(clientSearch){
+    const s = clientSearch.toLowerCase();
+    rows = rows.filter(r=>
+      r.client.toLowerCase().includes(s) ||
+      (r.deal||'').toLowerCase().includes(s) ||
+      (r.action||'').toLowerCase().includes(s) ||
+      (r.owner||'').toLowerCase().includes(s)
+    );
+  }
+
+  const colMap = {client:'client',deal:'deal',rag:'rag',action:'action',owner:'owner',due:'due'};
+  rows.sort((a,b)=>{
+    let av=a[clientSortCol]||'', bv=b[clientSortCol]||'';
+    if(clientSortCol==='due'){av=av||'9999-99-99';bv=bv||'9999-99-99';}
+    return clientSortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
+  });
+
+  const open = rows.filter(r=>!r.done);
+  const done = rows.filter(r=>r.done);
+  const allRows = [...open, ...done];
+
+  const thArrow = col => `<span class="sort-arrow">${clientSortCol===col?(clientSortAsc?'▲':'▼'):'⇅'}</span>`;
+  const thClass = col => clientSortCol===col ? 'sorted' : '';
+
+  let html = `
+    <div class="clients-toolbar">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <input type="text" class="clients-search" placeholder="Search clients, actions..." oninput="clientSearch=this.value;renderClients()" value="${clientSearch}">
+        <span style="font-size:12px;color:var(--text3);">${open.length} open · ${done.length} done</span>
+      </div>
+      <button class="btn-primary" style="font-size:12px;padding:6px 14px;" onclick="openClientModal(null)">+ Add action</button>
+    </div>
+    <div class="clients-table-wrap">
+      <table class="clients-table">
+        <thead><tr>
+          <th style="width:32px;"></th>
+          <th class="${thClass('client')}" onclick="sortClients('client')">Client ${thArrow('client')}</th>
+          <th class="${thClass('deal')}" onclick="sortClients('deal')">Deal / Project ${thArrow('deal')}</th>
+          <th class="${thClass('rag')}" onclick="sortClients('rag')" style="width:52px;">RAG ${thArrow('rag')}</th>
+          <th class="${thClass('action')}" onclick="sortClients('action')">Action ${thArrow('action')}</th>
+          <th class="${thClass('owner')}" onclick="sortClients('owner')">Owner ${thArrow('owner')}</th>
+          <th class="${thClass('due')}" onclick="sortClients('due')">Due ${thArrow('due')}</th>
+        </tr></thead>
+        <tbody>`;
+
+  if(!allRows.length){
+    html += `<tr><td colspan="7" class="clients-empty">No client actions yet — tap + to add one.</td></tr>`;
+  } else {
+    html += allRows.map(r=>{
+      const days = daysUntil(r.due);
+      const dueClass = days===null?'client-due-none':days<0?'client-due-urgent':days<=3?'client-due-urgent':days<=7?'client-due-soon':'client-due-ok';
+      const dueText = days===null?'—':dlLabel(days);
+      const owner = TEAM.find(t=>t.id===r.owner);
+      const ragColor = r.rag==='R'?'var(--rag-r)':r.rag==='A'?'var(--rag-a)':'var(--rag-g)';
+      return `<tr class="client-row ${r.done?'done-row':''}" onclick="openClientModal('${r.id}')">
+        <td onclick="event.stopPropagation()"><input type="checkbox" class="done-check" ${r.done?'checked':''} onchange="toggleClient('${r.id}')"></td>
+        <td class="client-name-cell">${r.client}</td>
+        <td style="color:var(--text2);font-size:12px;">${r.deal||'—'}</td>
+        <td><span style="width:10px;height:10px;border-radius:50%;background:${ragColor};display:inline-block;"></span></td>
+        <td class="client-action-cell" title="${r.action}">${r.action}</td>
+        <td>${owner?`<div style="display:flex;align-items:center;gap:6px;"><div style="width:22px;height:22px;border-radius:50%;background:${owner.color};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;color:#fff;flex-shrink:0;">${owner.initials}</div><span style="font-size:12px;">${owner.name}</span></div>`:'<span style="color:var(--text3);font-size:12px;">—</span>'}</td>
+        <td class="${dueClass}">${dueText}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  html += `</tbody></table></div>`;
+  document.getElementById('viewClients').innerHTML = html;
+}
+
+function sortClients(col){
+  if(clientSortCol===col) clientSortAsc=!clientSortAsc;
+  else { clientSortCol=col; clientSortAsc=true; }
+  renderClients();
+}
+
+function openClientModal(id){
+  editClientId = id||null;
+  const item = id ? state.clients.find(c=>c.id===id) : null;
+  document.getElementById('clientModalTitle').textContent = item ? 'Edit client action' : 'Add client action';
+  document.getElementById('cClient').value = item ? item.client : '';
+  document.getElementById('cDeal').value = item ? item.deal||'' : '';
+  document.getElementById('cAction').value = item ? item.action : '';
+  document.getElementById('cRag').value = item ? item.rag : 'G';
+  document.getElementById('cDue').value = item ? item.due||'' : '';
+  document.getElementById('cNotes').value = item ? item.notes||'' : '';
+  document.getElementById('cDeleteBtn').style.display = item ? 'block' : 'none';
+  const ownerSel = document.getElementById('cOwner');
+  ownerSel.innerHTML = '<option value="">— No owner —</option>' + TEAM.map(t=>`<option value="${t.id}" ${item&&item.owner===t.id?'selected':''}>${t.name}</option>`).join('');
+  document.getElementById('clientModal').style.display = 'block';
+}
+
+function closeClientModal(){ document.getElementById('clientModal').style.display='none'; editClientId=null; }
+
+async function saveClientAction(){
+  const client = document.getElementById('cClient').value.trim();
+  const action = document.getElementById('cAction').value.trim();
+  if(!client||!action) return;
+  const item = {
+    id: editClientId||uid(),
+    client, deal: document.getElementById('cDeal').value.trim(),
+    action, owner: document.getElementById('cOwner').value||null,
+    rag: document.getElementById('cRag').value,
+    due: document.getElementById('cDue').value,
+    notes: document.getElementById('cNotes').value.trim(),
+    done: editClientId ? (state.clients.find(c=>c.id===editClientId)?.done||false) : false
+  };
+  if(editClientId){ const idx=state.clients.findIndex(c=>c.id===editClientId); if(idx>-1) state.clients[idx]=item; }
+  else state.clients.push(item);
+  saveLocal(); closeClientModal(); renderClients();
+  await saveClientToSupabase(item); showToast('Client action saved');
+}
+
+async function toggleClient(id){
+  const item=state.clients.find(c=>c.id===id);
+  if(item){ item.done=!item.done; saveLocal(); renderClients(); await saveClientToSupabase(item); }
+}
+
+async function deleteCurrentClient(){
+  if(!editClientId) return;
+  state.clients=state.clients.filter(c=>c.id!==editClientId);
+  saveLocal(); closeClientModal(); renderClients();
+  await deleteClientFromSupabase(editClientId); showToast('Action deleted');
 }
 
 // ─── PASSWORD LOCK ───────────────────────────────────────
