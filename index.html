@@ -194,6 +194,22 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--navy);flex-shrink
 .clients-empty{text-align:center;padding:32px;color:var(--text3);font-size:13px;}
 .done-check{accent-color:var(--navy);width:15px;height:15px;cursor:pointer;}
 
+
+/* Close status */
+.status-badge{display:inline-block;font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;}
+.status-completed{background:#EAF3DE;color:#3B6D11;}
+.status-deferred{background:#FAEEDA;color:#854F0B;}
+.close-prompt{position:fixed;bottom:0;left:0;right:0;background:var(--bg);border-top:1px solid var(--border);padding:16px 20px;z-index:90;display:flex;flex-direction:column;gap:10px;box-shadow:0 -4px 20px rgba(0,0,0,0.1);}
+.close-prompt-title{font-size:13px;font-weight:500;color:var(--text);text-align:center;}
+.close-prompt-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.close-btn-completed{background:#EAF3DE;color:#3B6D11;border:1px solid #639922;border-radius:var(--radius-sm);padding:10px;font-size:13px;font-weight:500;cursor:pointer;}
+.close-btn-deferred{background:#FAEEDA;color:#854F0B;border:1px solid #EF9F27;border-radius:var(--radius-sm);padding:10px;font-size:13px;font-weight:500;cursor:pointer;}
+.close-btn-cancel{background:var(--bg2);color:var(--text2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px;font-size:13px;cursor:pointer;grid-column:span 2;}
+.closed-section-header{display:flex;align-items:center;justify-content:space-between;cursor:pointer;padding:6px 0;}
+.closed-section-header:hover{opacity:0.8;}
+.btn-close-action{background:none;border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text3);font-size:11px;padding:3px 8px;cursor:pointer;white-space:nowrap;flex-shrink:0;}
+.btn-close-action:hover{background:var(--bg2);color:var(--text2);}
+
 /* Lock screen */
 .lock-screen{position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;background:#1e2d3d;z-index:9999;display:flex;align-items:center;justify-content:center;}
 .lock-box{background:var(--bg);border-radius:16px;padding:32px 28px;width:320px;max-width:90vw;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.4);}
@@ -267,6 +283,20 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--navy);flex-shrink
         <button id="cDeleteBtn" class="btn-danger" style="display:none;" onclick="deleteCurrentClient()">Delete</button>
         <button class="btn-primary" onclick="saveClientAction()">Save</button>
       </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- Close action prompt -->
+<div id="closePrompt" style="display:none;">
+  <div style="position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:89;" onclick="hideClosePrompt()"></div>
+  <div class="close-prompt">
+    <div class="close-prompt-title" id="closePromptTitle">Close action</div>
+    <div class="close-prompt-btns">
+      <button class="close-btn-completed" onclick="confirmClose('completed')">&#10003; Completed</button>
+      <button class="close-btn-deferred" onclick="confirmClose('deferred')">&#8594; Deferred</button>
+      <button class="close-btn-cancel" onclick="hideClosePrompt()">Cancel</button>
     </div>
   </div>
 </div>
@@ -440,6 +470,7 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--navy);flex-shrink
       <div class="btn-row">
         <button class="btn-secondary" onclick="closeStrategyModal()">Cancel</button>
         <button id="sDeleteBtn" class="btn-danger" style="display:none;" onclick="deleteCurrentStrategy()">Delete</button>
+        <button id="sCloseBtn" class="btn-close-action" style="display:none;padding:10px 14px;" onclick="showStrategyClosePrompt()">Close item</button>
         <button class="btn-primary" onclick="saveStrategyItem()">Save</button>
       </div>
     </div>
@@ -536,13 +567,13 @@ async function loadFromSupabase(){
     FNS.forEach(f=>{state.rags[f.id]='G';state.updates[f.id]='';});
     ragRows.forEach(r=>{state.rags[r.fn_id]=r.rag||'G';state.updates[r.fn_id]=r.update_text||'';});
     // Actions
-    state.actions=actionRows.map(r=>({id:r.id,fn:r.fn,text:r.text,due:r.due||'',priority:r.priority||'Medium',rag:r.rag||'G',done:r.done||false}));
+    state.actions=actionRows.map(r=>({id:r.id,fn:r.fn,text:r.text,due:r.due||'',priority:r.priority||'Medium',rag:r.rag||'G',done:r.done||false,closeStatus:r.close_status||null}));
     // OKRs
     state.okrs=okrRows.map(r=>({id:r.id,fn:r.fn,name:r.name,year:r.year,quarters:r.quarters||{Q1:{rag:'N',progress:0,notes:''},Q2:{rag:'N',progress:0,notes:''},Q3:{rag:'N',progress:0,notes:''},Q4:{rag:'N',progress:0,notes:''}}}));
     // Clients
-    state.clients=clientRows.map(r=>({id:r.id,client:r.client,deal:r.deal||'',action:r.action,owner:r.owner||null,rag:r.rag||'G',due:r.due||'',notes:r.notes||'',done:r.done||false}));
+    state.clients=clientRows.map(r=>({id:r.id,client:r.client,deal:r.deal||'',action:r.action,owner:r.owner||null,rag:r.rag||'G',due:r.due||'',notes:r.notes||'',done:r.done||false,closeStatus:r.close_status||null}));
     // Strategy
-    state.strategy=strategyRows.map(r=>({id:r.id,name:r.name,type:r.type||'initiative',rag:r.rag||'G',due:r.due||'',priority:r.priority||'Medium',progress:r.progress||0,owner:r.owner||null,notes:r.notes||''}));
+    state.strategy=strategyRows.map(r=>({id:r.id,name:r.name,type:r.type||'initiative',rag:r.rag||'G',due:r.due||'',priority:r.priority||'Medium',progress:r.progress||0,owner:r.owner||null,notes:r.notes||'',closeStatus:r.close_status||null}));
     setSyncStatus('ok');
     render();
   }catch(e){
@@ -568,7 +599,7 @@ async function saveRagToSupabase(fnId){
 async function saveActionToSupabase(action){
   setSyncStatus('syncing');
   try{
-    await sbUpsert('ceo_actions',{id:action.id,fn:action.fn,text:action.text,due:action.due||null,priority:action.priority,rag:action.rag,done:action.done});
+    await sbUpsert('ceo_actions',{id:action.id,fn:action.fn,text:action.text,due:action.due||null,priority:action.priority,rag:action.rag,done:action.done,close_status:action.closeStatus||null});
     setSyncStatus('ok');
   }catch(e){setSyncStatus('error');saveLocal();}
 }
@@ -580,7 +611,7 @@ async function deleteActionFromSupabase(id){
 async function saveStrategyToSupabase(item){
   setSyncStatus('syncing');
   try{
-    await sbUpsert('ceo_strategy',{id:item.id,name:item.name,type:item.type,rag:item.rag,due:item.due||null,priority:item.priority,progress:item.progress,owner:item.owner||null,notes:item.notes||''});
+    await sbUpsert('ceo_strategy',{id:item.id,name:item.name,type:item.type,rag:item.rag,due:item.due||null,priority:item.priority,progress:item.progress,owner:item.owner||null,notes:item.notes||'',close_status:item.closeStatus||null});
     setSyncStatus('ok');
   }catch(e){setSyncStatus('error');saveLocal();}
 }
@@ -685,7 +716,7 @@ function strategyCard(item){
       ${owner?`<div style="display:flex;align-items:center;gap:6px;"><div class="owner-avatar" style="background:${owner.color};">${owner.initials}</div><span style="font-size:11px;color:var(--text2);">${owner.name}</span></div>`:'<div></div>'}
       ${item.due?`<div style="font-size:11px;font-weight:500;color:${dlColor(days)};">${dlLabel(days)}</div>`:''}
     </div>
-    ${item.notes?`<div style="margin-top:8px;font-size:11px;color:var(--text2);border-top:1px solid var(--border);padding-top:6px;">${item.notes}</div>`:''}
+    ${item.closeStatus?`<div style="margin-top:8px;"><span class="status-badge status-${item.closeStatus}">${item.closeStatus==='completed'?'✓ Completed':'→ Deferred'}</span></div>`:''}    ${item.notes?`<div style="margin-top:8px;font-size:11px;color:var(--text2);border-top:1px solid var(--border);padding-top:6px;">${item.notes}</div>`:''}
   </div>`;}
 function renderStrategy(){
   const types=['initiative','okr','quarterly'];
@@ -711,9 +742,12 @@ function setStrategyFilter(f){strategyFilter=f;renderStrategy();}
 // ─── ACTIONS VIEW ─────────────────────────────────────────
 function renderActions(){
   const open=state.actions.filter(a=>!a.done).sort((a,b)=>new Date(a.due||'9999')-new Date(b.due||'9999'));
-  const done=state.actions.filter(a=>a.done);
+  const completed=state.actions.filter(a=>a.done&&a.closeStatus==='completed');
+  const deferred=state.actions.filter(a=>a.done&&a.closeStatus==='deferred');
+  const closedOther=state.actions.filter(a=>a.done&&!a.closeStatus);
+  const closed=[...completed,...deferred,...closedOther];
   let html='';
-  if(!open.length&&!done.length){html='<div class="empty-state">No actions yet.<br>Tap + to add one.</div>';}
+  if(!open.length&&!closed.length){html='<div class="empty-state">No actions yet.<br>Tap + to add one.</div>';}
   else{
     if(open.length){html+=`<div class="section-head">Open (${open.length})</div>`;
       html+=open.map(a=>{const f=FNS.find(x=>x.id===a.fn);const days=daysUntil(a.due);
@@ -724,13 +758,22 @@ function renderActions(){
             ${a.due?`<span style="font-size:11px;font-weight:500;color:${dlColor(days)};">${dlLabel(days)}</span>`:''}
             <span class="rag-pill rag-pill-${a.rag||'G'}">${a.rag||'G'}</span>
           </div></div>
+          <button class="btn-close-action" onclick="event.stopPropagation();showClosePrompt('action','${a.id}')">Close</button>
           <button class="btn-del" onclick="deleteAction('${a.id}')">&#215;</button>
         </div>`;}).join('');}
-    if(done.length){html+=`<div class="section-head">Completed (${done.length})</div>`;
-      html+=done.map(a=>`<div class="action-item done"><input type="checkbox" checked onchange="toggleAction('${a.id}')">
-        <div style="flex:1;"><div class="action-main" style="font-size:13px;">${a.text}</div></div>
+    if(closed.length){
+      const isOpen=window._closedActionsOpen!==false;
+      html+=`<div class="closed-section-header" onclick="window._closedActionsOpen=!${isOpen};renderActions()">
+        <div class="section-head" style="margin:0;">Closed (${closed.length})</div>
+        <span style="font-size:12px;color:var(--text3);">${isOpen?'▲ hide':'▼ show'}</span>
+      </div>`;
+      if(isOpen){html+=closed.map(a=>`<div class="action-item done">
+        <input type="checkbox" checked onchange="toggleAction('${a.id}')">
+        <div style="flex:1;"><div class="action-main" style="font-size:13px;">${a.text}</div>
+        <div style="margin-top:3px;">${a.closeStatus?`<span class="status-badge status-${a.closeStatus}">${a.closeStatus==='completed'?'✓ Completed':'→ Deferred'}</span>`:''}</div></div>
         <button class="btn-del" onclick="deleteAction('${a.id}')">&#215;</button>
       </div>`).join('');}
+    }
   }
   document.getElementById('viewActions').innerHTML=html;
 }
@@ -805,7 +848,7 @@ function openFnModal(fnId){
       <input type="checkbox" onchange="toggleActionModal('${a.id}')">
       <div style="flex:1;font-size:13px;">${a.text}${a.due?`<span style="margin-left:6px;font-size:11px;color:${dlColor(days)};">${dlLabel(days)}</span>`:''}</div>
       <span class="rag-pill rag-pill-${a.rag||'G'}">${a.rag||'G'}</span>
-      <button class="btn-del" onclick="deleteActionModal('${a.id}')">&#215;</button>
+      <button class="btn-close-action" onclick="showClosePrompt('fnaction','${a.id}')">Close</button>
     </div>`;}).join(''):`<p style="font-size:13px;color:var(--text3);padding:8px 0;">No open actions.</p>`}</div>
     <button class="btn-secondary" onclick="openAddAction('${fnId}')" style="margin-top:12px;margin-bottom:4px;width:100%;">+ Add action</button>
     <div class="btn-row"><button class="btn-secondary" onclick="closeFnModal()">Cancel</button><button class="btn-primary" onclick="saveFnModal()">Save changes</button></div>`;
@@ -857,6 +900,7 @@ function openStrategyModal(id){
   document.getElementById('progressVal').textContent=item?item.progress||0:0;
   document.getElementById('sNotes').value=item?item.notes||'':'';
   document.getElementById('sDeleteBtn').style.display=item?'block':'none';
+  document.getElementById('sCloseBtn').style.display=item?'block':'none';
   selectedOwner=item?item.owner:null;
   renderOwnerGrid(selectedOwner);
   document.getElementById('strategyModal').style.display='block';
@@ -1103,7 +1147,7 @@ async function loadClients(){
 
 async function saveClientToSupabase(item){
   setSyncStatus('syncing');
-  try{ await sbUpsert('ceo_clients',{id:item.id,client:item.client,deal:item.deal,action:item.action,owner:item.owner||null,rag:item.rag,due:item.due||null,notes:item.notes,done:item.done}); setSyncStatus('ok'); }
+  try{ await sbUpsert('ceo_clients',{id:item.id,client:item.client,deal:item.deal,action:item.action,owner:item.owner||null,rag:item.rag,due:item.due||null,notes:item.notes,done:item.done,close_status:item.closeStatus||null}); setSyncStatus('ok'); }
   catch(e){ setSyncStatus('error'); saveLocal(); }
 }
 async function deleteClientFromSupabase(id){
@@ -1177,9 +1221,10 @@ function renderClients(){
         <td class="client-name-cell">${r.client}</td>
         <td style="color:var(--text2);font-size:12px;">${r.deal||'—'}</td>
         <td><span style="width:10px;height:10px;border-radius:50%;background:${ragColor};display:inline-block;"></span></td>
-        <td class="client-action-cell" title="${r.action}">${r.action}</td>
+        <td class="client-action-cell" title="${r.action}">${r.done&&r.closeStatus?`<span class="status-badge status-${r.closeStatus}" style="margin-right:6px;">${r.closeStatus==='completed'?'✓ Completed':'→ Deferred'}</span>`:''}${r.action}</td>
         <td>${owner?`<div style="display:flex;align-items:center;gap:6px;"><div style="width:22px;height:22px;border-radius:50%;background:${owner.color};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;color:#fff;flex-shrink:0;">${owner.initials}</div><span style="font-size:12px;">${owner.name}</span></div>`:'<span style="color:var(--text3);font-size:12px;">—</span>'}</td>
-        <td class="${dueClass}">${dueText}</td>
+        <td class="${dueClass}">${r.done?'':dueText}${!r.done?'':''}</td>
+        <td onclick="event.stopPropagation()">${!r.done?`<button class="btn-close-action" onclick="showClosePrompt('client','${r.id}')">Close</button>`:''}</td>
       </tr>`;
     }).join('');
   }
@@ -1241,6 +1286,52 @@ async function deleteCurrentClient(){
   state.clients=state.clients.filter(c=>c.id!==editClientId);
   saveLocal(); closeClientModal(); renderClients();
   await deleteClientFromSupabase(editClientId); showToast('Action deleted');
+}
+
+
+// ─── CLOSE PROMPT ─────────────────────────────────────────
+let closePromptType = null;
+let closePromptId = null;
+
+function showClosePrompt(type, id){
+  closePromptType = type;
+  closePromptId = id;
+  let text = '';
+  if(type==='action'){ const a=state.actions.find(x=>x.id===id); text=a?a.text:''; }
+  else if(type==='client'){ const c=state.clients.find(x=>x.id===id); text=c?c.action:''; }
+  else if(type==='fnaction'){ const a=state.actions.find(x=>x.id===id); text=a?a.text:''; }
+  document.getElementById('closePromptTitle').textContent = (text.length>50?text.slice(0,48)+'…':text)||'Close action';
+  document.getElementById('closePrompt').style.display='block';
+}
+
+
+function showStrategyClosePrompt(){
+  if(!editStrategyId) return;
+  const item = state.strategy.find(s=>s.id===editStrategyId);
+  closeStrategyModal();
+  closePromptType = 'strategy';
+  closePromptId = editStrategyId;
+  document.getElementById('closePromptTitle').textContent = item ? (item.name.length>50?item.name.slice(0,48)+'…':item.name) : 'Close strategy item';
+  document.getElementById('closePrompt').style.display = 'block';
+}
+
+function hideClosePrompt(){
+  document.getElementById('closePrompt').style.display='none';
+  closePromptType=null; closePromptId=null;
+}
+
+async function confirmClose(status){
+  hideClosePrompt();
+  if(closePromptType==='action'||closePromptType==='fnaction'){
+    const a=state.actions.find(x=>x.id===closePromptId);
+    if(a){ a.done=true; a.closeStatus=status; saveLocal(); render(); await saveActionToSupabase(a); showToast(status==='completed'?'Marked completed':'Marked deferred'); }
+  } else if(closePromptType==='client'){
+    const c=state.clients.find(x=>x.id===closePromptId);
+    if(c){ c.done=true; c.closeStatus=status; saveLocal(); renderClients(); await saveClientToSupabase(c); showToast(status==='completed'?'Marked completed':'Marked deferred'); }
+  } else if(closePromptType==='strategy'){
+    const s=state.strategy.find(x=>x.id===closePromptId);
+    if(s){ s.closeStatus=status; saveLocal(); render(); await saveStrategyToSupabase(s); showToast(status==='completed'?'Marked completed':'Marked deferred'); }
+  }
 }
 
 // ─── PASSWORD LOCK ───────────────────────────────────────
