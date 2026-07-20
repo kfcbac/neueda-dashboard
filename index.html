@@ -210,6 +210,30 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--navy);flex-shrink
 .btn-close-action{background:none;border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text3);font-size:11px;padding:3px 8px;cursor:pointer;white-space:nowrap;flex-shrink:0;}
 .btn-close-action:hover{background:var(--bg2);color:var(--text2);}
 
+
+/* 1:1 Agenda */
+.agenda-toolbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;}
+.agenda-week{font-size:13px;font-weight:500;color:var(--text2);}
+.agenda-type-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px;}
+.agenda-tab{padding:5px 14px;font-size:12px;border:1px solid var(--border);border-radius:20px;background:var(--bg);color:var(--text2);cursor:pointer;transition:all 0.15s;}
+.agenda-tab.active{color:#fff;border-color:transparent;}
+.agenda-items{display:flex;flex-direction:column;gap:8px;margin-bottom:24px;}
+.agenda-item{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;display:flex;align-items:flex-start;gap:10px;transition:border-color 0.15s;}
+.agenda-item.done{opacity:0.5;}
+.agenda-item.done .agenda-item-title{text-decoration:line-through;}
+.agenda-item-type{font-size:10px;font-weight:600;padding:2px 8px;border-radius:8px;white-space:nowrap;flex-shrink:0;margin-top:2px;}
+.agenda-item-body{flex:1;}
+.agenda-item-title{font-size:13px;font-weight:500;color:var(--text);line-height:1.4;}
+.agenda-item-meta{display:flex;align-items:center;gap:8px;margin-top:4px;flex-wrap:wrap;}
+.agenda-item-author{font-size:11px;color:var(--text3);}
+.agenda-item-notes{font-size:12px;color:var(--text2);margin-top:4px;line-height:1.4;}
+.agenda-section-head{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin:16px 0 8px;display:flex;align-items:center;justify-content:space-between;}
+.archive-section{margin-top:24px;border-top:1px solid var(--border);padding-top:16px;}
+.archive-week{margin-bottom:16px;}
+.archive-week-header{font-size:12px;font-weight:600;color:var(--text3);margin-bottom:8px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;}
+.archive-week-header:hover{color:var(--text2);}
+.agenda-empty{text-align:center;padding:32px;color:var(--text3);font-size:13px;border:1px dashed var(--border);border-radius:var(--radius);}
+
 /* Lock screen */
 .lock-screen{position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;background:#1e2d3d;z-index:9999;display:flex;align-items:center;justify-content:center;}
 .lock-box{background:var(--bg);border-radius:16px;padding:32px 28px;width:320px;max-width:90vw;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.4);}
@@ -301,6 +325,49 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--navy);flex-shrink
   </div>
 </div>
 
+
+<!-- 1:1 Agenda modal -->
+<div id="agendaModal" style="display:none;">
+  <div class="modal-backdrop" onclick="if(event.target===this)closeAgendaModal()">
+    <div class="modal-sheet" style="position:relative;"><div class="modal-handle"></div>
+      <button class="modal-close" onclick="closeAgendaModal()">&#10005;</button>
+      <div class="modal-title" id="agendaModalTitle">Add agenda item</div>
+      <div class="form-group"><label class="form-label">Type</label>
+        <select class="form-input" id="agType">
+          <option value="issue">Issue to discuss</option>
+          <option value="task">Task / action</option>
+          <option value="update">Update / FYI</option>
+          <option value="decision">Decision needed</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Title</label>
+        <input type="text" class="form-input" id="agTitle" placeholder="What needs to be discussed?">
+      </div>
+      <div class="form-group"><label class="form-label">Notes (optional)</label>
+        <textarea class="form-input" id="agNotes" rows="3" placeholder="Any context or background..."></textarea>
+      </div>
+      <div class="form-group"><label class="form-label">Added by</label>
+        <select class="form-input" id="agAuthor">
+          <option value="kevin">Kevin</option>
+          <option value="layla">Layla</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Priority</label>
+        <select class="form-input" id="agPriority">
+          <option value="high">High</option>
+          <option value="normal" selected>Normal</option>
+          <option value="low">Low</option>
+        </select>
+      </div>
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="closeAgendaModal()">Cancel</button>
+        <button id="agDeleteBtn" class="btn-danger" style="display:none;" onclick="deleteAgendaItem()">Delete</button>
+        <button class="btn-primary" onclick="saveAgendaItem()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Lock screen -->
 <div id="lockScreen" class="lock-screen">
   <div class="lock-box">
@@ -346,6 +413,7 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--navy);flex-shrink
   <button class="nav-tab" onclick="setView('deadlines',this)">Deadlines</button>
   <button class="nav-tab" onclick="setView('okrs',this)">OKRs</button>
   <button class="nav-tab" onclick="setView('clients',this)">Clients</button>
+  <button class="nav-tab" onclick="setView('agenda',this)">1:1</button>
 </nav>
 
 <div class="main">
@@ -355,6 +423,7 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--navy);flex-shrink
   <div id="viewDeadlines" style="display:none;"></div>
   <div id="viewOkrs" style="display:none;"></div>
   <div id="viewClients" style="display:none;"></div>
+  <div id="viewAgenda" style="display:none;"></div>
 </div>
 
 <button class="fab" id="fab" onclick="handleFab()" aria-label="Add item">+</button>
@@ -560,8 +629,8 @@ async function loadFromSupabase(){
   setSyncStatus('syncing');
   try{
     // Ensure tables exist by attempting to load — will fail gracefully if not set up yet
-    const [ragRows,actionRows,strategyRows,okrRows,clientRows]=await Promise.all([
-      sbGet('ceo_rags'),sbGet('ceo_actions'),sbGet('ceo_strategy'),sbGet('ceo_okrs'),sbGet('ceo_clients')
+    const [ragRows,actionRows,strategyRows,okrRows,clientRows,agendaRows]=await Promise.all([
+      sbGet('ceo_rags'),sbGet('ceo_actions'),sbGet('ceo_strategy'),sbGet('ceo_okrs'),sbGet('ceo_clients'),sbGet('ceo_agenda')
     ]);
     // Rags & updates
     FNS.forEach(f=>{state.rags[f.id]='G';state.updates[f.id]='';});
@@ -570,6 +639,8 @@ async function loadFromSupabase(){
     state.actions=actionRows.map(r=>({id:r.id,fn:r.fn,text:r.text,due:r.due||'',priority:r.priority||'Medium',rag:r.rag||'G',done:r.done||false,closeStatus:r.close_status||null}));
     // OKRs
     state.okrs=okrRows.map(r=>({id:r.id,fn:r.fn,name:r.name,year:r.year,quarters:r.quarters||{Q1:{rag:'N',progress:0,notes:''},Q2:{rag:'N',progress:0,notes:''},Q3:{rag:'N',progress:0,notes:''},Q4:{rag:'N',progress:0,notes:''}}}));
+    // Agenda
+    state.agenda=agendaRows.map(r=>({id:r.id,type:r.type||'issue',title:r.title,notes:r.notes||'',author:r.author||'kevin',priority:r.priority||'normal',done:r.done||false,archived:r.archived||false,week:r.week||'',created:r.created||''}));
     // Clients
     state.clients=clientRows.map(r=>({id:r.id,client:r.client,deal:r.deal||'',action:r.action,owner:r.owner||null,rag:r.rag||'G',due:r.due||'',notes:r.notes||'',done:r.done||false,closeStatus:r.close_status||null}));
     // Strategy
@@ -806,17 +877,19 @@ function render(){
   else if(currentView==='actions')renderActions();
   else if(currentView==='okrs')renderOkrs();
   else if(currentView==='clients')renderClients();
+  else if(currentView==='agenda')renderAgenda();
   else renderDeadlines();
 }
 function setView(v,btn){
   currentView=v;
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   btn.classList.add('active');
-  ['wheel','strategy','actions','deadlines','okrs','clients'].forEach(x=>{
+  ['wheel','strategy','actions','deadlines','okrs','clients','agenda'].forEach(x=>{
     document.getElementById('view'+x.charAt(0).toUpperCase()+x.slice(1)).style.display=x===v?'block':'none';
   });
   document.getElementById('fab').style.display=(v==='deadlines'||v==='okrs')?'none':'flex';
   if(v==='clients'){document.getElementById('fab').style.display='flex';document.getElementById('fab').onclick=()=>openClientModal(null);}
+  else if(v==='agenda'){document.getElementById('fab').style.display='flex';document.getElementById('fab').onclick=()=>openAgendaModal(null);}
   else document.getElementById('fab').onclick=()=>handleFab();
   render();
 }
@@ -1332,6 +1405,204 @@ async function confirmClose(status){
     const s=state.strategy.find(x=>x.id===closePromptId);
     if(s){ s.closeStatus=status; saveLocal(); render(); await saveStrategyToSupabase(s); showToast(status==='completed'?'Marked completed':'Marked deferred'); }
   }
+}
+
+// ─── 1:1 AGENDA ───────────────────────────────────────────
+const AGENDA_TYPES = {
+  issue:    {label:'Issue',    color:'#E24B4A', bg:'#FCEBEB'},
+  task:     {label:'Task',     color:'#1a5fa8', bg:'#E6F1FB'},
+  update:   {label:'Update',   color:'#639922', bg:'#EAF3DE'},
+  decision: {label:'Decision', color:'#EF9F27', bg:'#FAEEDA'}
+};
+let agendaTypeFilter = 'all';
+let editAgendaId = null;
+
+async function loadAgenda(){
+  try{
+    const rows = await sbGet('ceo_agenda');
+    state.agenda = rows.map(r=>({
+      id:r.id, type:r.type||'issue', title:r.title, notes:r.notes||'',
+      author:r.author||'kevin', priority:r.priority||'normal',
+      done:r.done||false, archived:r.archived||false,
+      week:r.week||currentWeekKey(), created:r.created||new Date().toISOString()
+    }));
+  } catch(e){ if(!state.agenda) state.agenda=[]; }
+}
+
+async function saveAgendaToSupabase(item){
+  setSyncStatus('syncing');
+  try{ await sbUpsert('ceo_agenda',{id:item.id,type:item.type,title:item.title,notes:item.notes,author:item.author,priority:item.priority,done:item.done,archived:item.archived,week:item.week,created:item.created}); setSyncStatus('ok'); }
+  catch(e){ setSyncStatus('error'); saveLocal(); }
+}
+async function deleteAgendaFromSupabase(id){
+  setSyncStatus('syncing');
+  try{ await sbDelete('ceo_agenda',id); setSyncStatus('ok'); }
+  catch(e){ setSyncStatus('error'); }
+}
+
+function currentWeekKey(){
+  const n=new Date(), s=new Date(n);
+  s.setDate(n.getDate()-n.getDay()+1);
+  return s.toISOString().slice(0,10);
+}
+
+function weekLabel2(key){
+  if(!key) return '';
+  const d = new Date(key);
+  const e = new Date(d); e.setDate(d.getDate()+6);
+  const f = x => x.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+  return `Week of ${f(d)} — ${f(e)}`;
+}
+
+function renderAgenda(){
+  if(!state.agenda) state.agenda=[];
+  const week = currentWeekKey();
+  const active = state.agenda.filter(a=>!a.archived);
+  const archived = state.agenda.filter(a=>a.archived);
+  const filtered = agendaTypeFilter==='all' ? active : active.filter(a=>a.type===agendaTypeFilter);
+  const open = filtered.filter(a=>!a.done).sort((a,b)=>({high:0,normal:1,low:2}[a.priority]||1)-({high:0,normal:1,low:2}[b.priority]||1));
+  const done = filtered.filter(a=>a.done);
+
+  const typeColors = Object.entries(AGENDA_TYPES).map(([k,v])=>`
+    <button class="agenda-tab ${agendaTypeFilter===k?'active':''}"
+      style="${agendaTypeFilter===k?`background:${v.color};color:#fff;border-color:${v.color};`:''}"
+      onclick="agendaTypeFilter='${k}';renderAgenda()">${v.label} (${active.filter(a=>a.type===k&&!a.done).length})</button>`).join('');
+
+  let html = `
+    <div class="agenda-toolbar">
+      <div>
+        <div style="font-size:15px;font-weight:500;">Kevin & Layla — 1:1</div>
+        <div class="agenda-week">${weekLabel2(week)}</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn-secondary" style="font-size:12px;padding:6px 12px;" onclick="archiveWeek()">Archive week</button>
+        <button class="btn-primary" style="font-size:12px;padding:6px 14px;" onclick="openAgendaModal(null)">+ Add item</button>
+      </div>
+    </div>
+    <div class="agenda-type-tabs">
+      <button class="agenda-tab ${agendaTypeFilter==='all'?'active':''}"
+        style="${agendaTypeFilter==='all'?'background:var(--navy);color:#fff;border-color:var(--navy);':''}"
+        onclick="agendaTypeFilter='all';renderAgenda()">All (${open.length})</button>
+      ${typeColors}
+    </div>`;
+
+  if(!open.length&&!done.length){
+    html+=`<div class="agenda-empty">No agenda items yet — tap + to add one.</div>`;
+  } else {
+    if(open.length){
+      html+=`<div class="swimlane-title" style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);">To discuss (${open.length})</div>
+      <div class="runway-grid" style="margin-bottom:20px;">${open.map(a=>agendaCard(a)).join('')}</div>`;
+    }
+    if(done.length){
+      html+=`<div class="swimlane-title" style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid var(--border);">Done (${done.length}) <span style="font-weight:400;">— will archive with week</span></div>
+      <div class="runway-grid" style="margin-bottom:20px;opacity:0.6;">${done.map(a=>agendaCard(a)).join('')}</div>`;
+    }
+  }
+
+  if(archived.length){
+    const byWeek={};
+    archived.forEach(a=>{ const w=a.week||'older'; if(!byWeek[w])byWeek[w]=[]; byWeek[w].push(a); });
+    const weeks=Object.keys(byWeek).sort().reverse();
+    html+=`<div class="archive-section">
+      <div class="agenda-section-head">Archive</div>
+      ${weeks.map(w=>`
+        <div class="archive-week">
+          <div class="archive-week-header" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">
+            <span>${weekLabel2(w)} <span style="font-size:11px;font-weight:400;">(${byWeek[w].length} items)</span></span>
+            <span style="font-size:12px;">&#9660;</span>
+          </div>
+          <div style="display:none;">
+            <div class="runway-grid" style="margin-top:10px;opacity:0.7;">${byWeek[w].map(a=>agendaCard(a,true)).join('')}</div>
+          </div>
+        </div>`).join('')}
+    </div>`;
+  }
+
+  document.getElementById('viewAgenda').innerHTML = html;
+}
+
+function agendaCard(a, isArchive=false){
+  const t = AGENDA_TYPES[a.type]||AGENDA_TYPES.issue;
+  const authorLabel = a.author==='layla'?'Layla':'Kevin';
+  const authorColor = a.author==='layla'?'#993C1D':'#1a5fa8';
+  const priorityBadge = a.priority==='high'?`<span style="font-size:10px;font-weight:600;background:var(--rag-r-bg);color:var(--rag-r-text);padding:1px 7px;border-radius:8px;margin-left:6px;">High</span>`:'';
+  return`<div class="strategy-card ${a.done?'done':''}" onclick="${isArchive?'':` editAgendaItem('${a.id}')`}" style="${a.done?'opacity:0.55;':''}">
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:10px;">
+      <div style="flex:1;">
+        <span class="type-badge" style="background:${t.bg};color:${t.color};margin-bottom:6px;display:inline-block;">${t.label}</span>${priorityBadge}
+        <div style="font-size:13px;font-weight:500;color:var(--text);line-height:1.4;margin-top:4px;">${a.title}</div>
+      </div>
+      ${!isArchive?`<input type="checkbox" ${a.done?'checked':''} onchange="event.stopPropagation();toggleAgenda('${a.id}')" style="flex-shrink:0;margin-top:3px;" onclick="event.stopPropagation()">`:
+      `<span style="font-size:10px;color:var(--text3);">archived</span>`}
+    </div>
+    ${a.notes?`<div style="font-size:12px;color:var(--text2);line-height:1.4;margin-bottom:8px;padding-top:6px;border-top:1px solid var(--border);">${a.notes}</div>`:''}
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:auto;">
+      <div style="display:flex;align-items:center;gap:6px;">
+        <div style="width:22px;height:22px;border-radius:50%;background:${authorColor};display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;color:#fff;">${a.author==='layla'?'LA':'KC'}</div>
+        <span style="font-size:11px;color:var(--text2);">${authorLabel}</span>
+      </div>
+    </div>
+  </div>`;
+}
+
+function openAgendaModal(id){
+  editAgendaId = id||null;
+  const item = id ? state.agenda.find(a=>a.id===id) : null;
+  document.getElementById('agendaModalTitle').textContent = item ? 'Edit agenda item' : 'Add agenda item';
+  document.getElementById('agType').value = item ? item.type : 'issue';
+  document.getElementById('agTitle').value = item ? item.title : '';
+  document.getElementById('agNotes').value = item ? item.notes||'' : '';
+  document.getElementById('agAuthor').value = item ? item.author : 'kevin';
+  document.getElementById('agPriority').value = item ? item.priority : 'normal';
+  document.getElementById('agDeleteBtn').style.display = item ? 'block' : 'none';
+  document.getElementById('agendaModal').style.display = 'block';
+}
+
+function closeAgendaModal(){ document.getElementById('agendaModal').style.display='none'; editAgendaId=null; }
+
+async function saveAgendaItem(){
+  const title = document.getElementById('agTitle').value.trim();
+  if(!title) return;
+  const item = {
+    id: editAgendaId||uid(),
+    type: document.getElementById('agType').value,
+    title,
+    notes: document.getElementById('agNotes').value.trim(),
+    author: document.getElementById('agAuthor').value,
+    priority: document.getElementById('agPriority').value,
+    done: editAgendaId ? (state.agenda.find(a=>a.id===editAgendaId)?.done||false) : false,
+    archived: false,
+    week: currentWeekKey(),
+    created: editAgendaId ? (state.agenda.find(a=>a.id===editAgendaId)?.created||new Date().toISOString()) : new Date().toISOString()
+  };
+  if(editAgendaId){ const idx=state.agenda.findIndex(a=>a.id===editAgendaId); if(idx>-1) state.agenda[idx]=item; }
+  else state.agenda.push(item);
+  saveLocal(); closeAgendaModal(); renderAgenda();
+  await saveAgendaToSupabase(item); showToast('Agenda item saved');
+}
+
+async function toggleAgenda(id){
+  const a=state.agenda.find(x=>x.id===id);
+  if(a){ a.done=!a.done; saveLocal(); renderAgenda(); await saveAgendaToSupabase(a); }
+}
+
+async function deleteAgendaItem(){
+  if(!editAgendaId) return;
+  state.agenda=state.agenda.filter(a=>a.id!==editAgendaId);
+  saveLocal(); closeAgendaModal(); renderAgenda();
+  await deleteAgendaFromSupabase(editAgendaId); showToast('Item deleted');
+}
+
+function editAgendaItem(id){ openAgendaModal(id); }
+
+async function archiveWeek(){
+  const week = currentWeekKey();
+  const toArchive = state.agenda.filter(a=>!a.archived);
+  if(!toArchive.length){ showToast('Nothing to archive'); return; }
+  toArchive.forEach(a=>{ a.archived=true; a.week=week; });
+  saveLocal(); renderAgenda();
+  await Promise.all(toArchive.map(a=>saveAgendaToSupabase(a)));
+  showToast(`${toArchive.length} items archived`);
 }
 
 // ─── PASSWORD LOCK ───────────────────────────────────────
