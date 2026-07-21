@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notes Library</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --navy:#1e2d3d;--blue:#1a5fa8;--orange:#E8450A;
+  --bg:#f7f8fa;--card:#ffffff;
+  --text:#1a1a2e;--text2:#4a5568;--text3:#8a93a2;
+  --border:#e2e6ed;--border2:#cdd2da;
+  --radius:10px;--radius-sm:6px;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;}
+button,input,select,textarea{font-family:inherit;}
+
+.header{background:var(--navy);padding:14px 24px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+.header-brand{display:flex;align-items:center;gap:10px;}
+.header-title{color:#fff;font-size:16px;font-weight:600;}
+.header-sub{color:rgba(255,255,255,0.45);font-size:11px;margin-top:1px;}
+.header-right{display:flex;align-items:center;gap:8px;}
+.btn-header{background:rgba(255,255,255,0.1);border:none;color:#fff;border-radius:var(--radius-sm);padding:7px 14px;font-size:12px;font-weight:500;cursor:pointer;transition:background 0.15s;}
+.btn-header:hover{background:rgba(255,255,255,0.2);}
+.btn-orange{background:var(--orange)!important;}
+.btn-orange:hover{opacity:0.9;}
+
+.toolbar{padding:12px 24px;background:var(--card);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.search-wrap{position:relative;flex:1;min-width:180px;max-width:300px;}
+.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:13px;pointer-events:none;}
+.search-input{width:100%;padding:8px 12px 8px 32px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;background:var(--bg);color:var(--text);outline:none;}
+.search-input:focus{border-color:var(--blue);}
+.filter-select{padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;background:var(--bg);color:var(--text);outline:none;cursor:pointer;}
+.count-chip{font-size:12px;color:var(--text3);margin-left:auto;white-space:nowrap;}
+.view-btns{display:flex;gap:4px;}
+.view-btn{background:none;border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 10px;font-size:13px;color:var(--text3);cursor:pointer;}
+.view-btn.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+
+.main{padding:20px 24px;max-width:1200px;margin:0 auto;}
+
+/* Drop zones */
+.drop-zones{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px;}
+.drop-zone{border:2px dashed var(--border2);border-radius:var(--radius);padding:24px 16px;text-align:center;cursor:pointer;transition:all 0.2s;background:var(--card);}
+.drop-zone:hover,.drop-zone.dragover{border-color:var(--orange);background:#fff5f2;}
+.drop-zone-icon{font-size:24px;margin-bottom:8px;}
+.drop-zone-title{font-size:13px;font-weight:500;color:var(--text);margin-bottom:3px;}
+.drop-zone-sub{font-size:11px;color:var(--text3);}
+.drop-zone-onenote{border-color:#1a5fa8;}
+.drop-zone-onenote:hover{border-color:#1a5fa8;background:#f0f6ff;}
+.drop-zone-supernote{border-color:#639922;}
+.drop-zone-supernote:hover{border-color:#639922;background:#f0f7e6;}
+
+/* Stats */
+.stats-bar{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px;}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:12px;text-align:center;}
+.stat-value{font-size:22px;font-weight:700;}
+.stat-label{font-size:11px;color:var(--text3);margin-top:2px;}
+
+/* Alpha groups */
+.alpha-group{margin-bottom:20px;}
+.alpha-header{font-size:22px;font-weight:700;color:var(--navy);padding:4px 0 8px;border-bottom:2px solid var(--orange);margin-bottom:12px;display:flex;align-items:baseline;gap:10px;}
+.alpha-count{font-size:12px;font-weight:400;color:var(--text3);}
+
+/* Grid */
+.library-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;}
+.pdf-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:14px;cursor:pointer;transition:border-color 0.15s,box-shadow 0.15s;position:relative;}
+.pdf-card:hover{border-color:var(--border2);box-shadow:0 2px 10px rgba(0,0,0,0.07);}
+.pdf-card-icon{width:38px;height:46px;border-radius:5px;display:flex;align-items:center;justify-content:center;margin-bottom:10px;font-size:10px;font-weight:700;color:#fff;letter-spacing:0.5px;}
+.pdf-card-name{font-size:13px;font-weight:500;color:var(--text);margin-bottom:6px;line-height:1.35;word-break:break-word;}
+.pdf-card-meta{display:flex;align-items:center;justify-content:space-between;margin-top:8px;flex-wrap:wrap;gap:4px;}
+.pdf-card-size{font-size:11px;color:var(--text3);}
+.pdf-card-date{font-size:11px;color:var(--text3);}
+.pdf-card-actions{position:absolute;top:8px;right:8px;display:none;gap:4px;}
+.pdf-card:hover .pdf-card-actions{display:flex;}
+.card-btn{background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:3px 7px;font-size:11px;color:var(--text2);cursor:pointer;}
+.card-btn:hover{background:var(--border);}
+.src-badge{font-size:10px;font-weight:500;padding:2px 7px;border-radius:8px;display:inline-block;}
+
+/* List */
+.library-list{display:flex;flex-direction:column;gap:5px;}
+.pdf-row{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:9px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:border-color 0.15s;}
+.pdf-row:hover{border-color:var(--border2);}
+.pdf-row-icon{width:30px;height:36px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;flex-shrink:0;}
+.pdf-row-name{font-size:13px;font-weight:500;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.pdf-row-source{font-size:11px;width:80px;flex-shrink:0;}
+.pdf-row-size{font-size:11px;color:var(--text3);width:70px;flex-shrink:0;text-align:right;}
+.pdf-row-date{font-size:11px;color:var(--text3);width:100px;flex-shrink:0;text-align:right;}
+.pdf-row-actions{display:none;gap:4px;flex-shrink:0;}
+.pdf-row:hover .pdf-row-actions{display:flex;}
+
+/* Modal */
+.modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;}
+.modal-box{background:var(--card);border-radius:var(--radius);width:100%;max-width:460px;max-height:85vh;overflow-y:auto;padding:24px;position:relative;}
+.modal-title{font-size:16px;font-weight:600;margin-bottom:16px;}
+.modal-close{position:absolute;top:16px;right:16px;background:var(--bg);border:none;border-radius:50%;width:28px;height:28px;font-size:16px;color:var(--text2);cursor:pointer;}
+.form-group{margin-bottom:14px;}
+.form-label{font-size:12px;font-weight:500;color:var(--text2);margin-bottom:5px;display:block;}
+.form-input{width:100%;padding:9px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:14px;background:var(--card);color:var(--text);outline:none;}
+.form-input:focus{border-color:var(--blue);}
+.btn-row{display:flex;gap:8px;margin-top:16px;}
+.btn-primary{background:var(--navy);color:#fff;border:none;border-radius:var(--radius-sm);padding:10px 20px;font-size:14px;font-weight:500;cursor:pointer;flex:1;}
+.btn-secondary{background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 16px;font-size:14px;cursor:pointer;}
+.btn-danger{background:#FCEBEB;color:#A32D2D;border:1px solid #E24B4A;border-radius:var(--radius-sm);padding:10px 16px;font-size:14px;cursor:pointer;}
+
+.empty-state{text-align:center;padding:50px 20px;color:var(--text3);}
+.empty-icon{font-size:40px;margin-bottom:10px;}
+.empty-title{font-size:15px;font-weight:500;color:var(--text2);margin-bottom:6px;}
+
+@media(max-width:600px){
+  .drop-zones{grid-template-columns:1fr;}
+  .stats-bar{grid-template-columns:repeat(2,1fr);}
+  .pdf-row-date,.pdf-row-size{display:none;}
+  .main{padding:12px;}
+  .toolbar{padding:10px 12px;}
+  .header{padding:12px 16px;}
+}
+</style>
+</head>
+<body>
+
+<header class="header">
+  <div class="header-brand">
+    <svg width="26" height="20" viewBox="0 0 26 20" aria-hidden="true">
+      <rect x="0" y="0" width="9" height="3.5" fill="#E8450A"/>
+      <rect x="0" y="0" width="3.5" height="13" fill="#E8450A"/>
+      <rect x="17" y="16.5" width="9" height="3.5" fill="#E8450A"/>
+      <rect x="22.5" y="7" width="3.5" height="13" fill="#E8450A"/>
+    </svg>
+    <div>
+      <div class="header-title">Notes library</div>
+      <div class="header-sub">OneNote &amp; Supernote PDF archive</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <button class="btn-header btn-orange" onclick="document.getElementById('onInput').click()">+ OneNote PDFs</button>
+    <button class="btn-header" style="background:rgba(99,153,34,0.3);" onclick="document.getElementById('snInput').click()">+ Supernote PDFs</button>
+    <input type="file" id="onInput" accept=".pdf" multiple style="display:none" onchange="handleFiles(this.files,'onenote')">
+    <input type="file" id="snInput" accept=".pdf" multiple style="display:none" onchange="handleFiles(this.files,'supernote')">
+  </div>
+</header>
+
+<div class="toolbar">
+  <div class="search-wrap">
+    <span class="search-icon">&#128269;</span>
+    <input type="text" class="search-input" placeholder="Search by name..." id="searchInput" oninput="renderLibrary()">
+  </div>
+  <select class="filter-select" id="sourceFilter" onchange="renderLibrary()">
+    <option value="">All sources</option>
+    <option value="onenote">OneNote</option>
+    <option value="supernote">Supernote</option>
+  </select>
+  <select class="filter-select" id="sortSelect" onchange="renderLibrary()">
+    <option value="alpha-asc">A → Z</option>
+    <option value="alpha-desc">Z → A</option>
+    <option value="size-desc">Largest first</option>
+    <option value="size-asc">Smallest first</option>
+    <option value="date-desc">Newest first</option>
+    <option value="date-asc">Oldest first</option>
+  </select>
+  <span class="count-chip" id="countChip"></span>
+  <div class="view-btns">
+    <button class="view-btn active" id="btnGrid" onclick="setView('grid')" title="Grid view">&#9783;</button>
+    <button class="view-btn" id="btnList" onclick="setView('list')" title="List view">&#9776;</button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="stats-bar" id="statsBar"></div>
+  <div class="drop-zones" id="dropZones">
+    <div class="drop-zone drop-zone-onenote" id="dzOne"
+      onclick="document.getElementById('onInput').click()"
+      ondragover="dzOver(event,'dzOne')" ondragleave="dzLeave('dzOne')" ondrop="dzDrop(event,'onenote','dzOne')">
+      <div class="drop-zone-icon">📘</div>
+      <div class="drop-zone-title">OneNote PDFs</div>
+      <div class="drop-zone-sub">From OneDrive/onenote/</div>
+    </div>
+    <div class="drop-zone drop-zone-supernote" id="dzSn"
+      onclick="document.getElementById('snInput').click()"
+      ondragover="dzOver(event,'dzSn')" ondragleave="dzLeave('dzSn')" ondrop="dzDrop(event,'supernote','dzSn')">
+      <div class="drop-zone-icon">✏️</div>
+      <div class="drop-zone-title">Supernote PDFs</div>
+      <div class="drop-zone-sub">From OneDrive/supernote/note/pdf/</div>
+    </div>
+  </div>
+  <div id="libraryContainer"></div>
+</div>
+
+<!-- Edit modal -->
+<div id="editModal" style="display:none;">
+  <div class="modal-backdrop" onclick="if(event.target===this)closeEdit()">
+    <div class="modal-box">
+      <button class="modal-close" onclick="closeEdit()">&#10005;</button>
+      <div class="modal-title">Edit note</div>
+      <div class="form-group"><label class="form-label">Name</label><input type="text" class="form-input" id="eName"></div>
+      <div class="form-group"><label class="form-label">Source</label>
+        <select class="form-input" id="eSource">
+          <option value="onenote">OneNote</option>
+          <option value="supernote">Supernote</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Notes</label><textarea class="form-input" id="eNotes" rows="2" placeholder="Any context..."></textarea></div>
+      <div style="font-size:12px;color:var(--text3);margin-top:4px;" id="eMeta"></div>
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="closeEdit()">Cancel</button>
+        <button class="btn-danger" onclick="deleteEntry()">Remove</button>
+        <button class="btn-primary" onclick="saveEdit()">Save</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let lib={entries:[]};
+let viewMode='grid';
+let editId=null;
+
+function load(){
+  try{const s=localStorage.getItem('neueda_notes_v2');if(s)lib=JSON.parse(s);}catch(e){}
+  if(!lib.entries)lib.entries=[];
+}
+function save(){try{localStorage.setItem('neueda_notes_v2',JSON.stringify(lib));}catch(e){}}
+function uid(){return Date.now()+Math.random().toString(36).slice(2,6);}
+function fmtSize(bytes){
+  if(!bytes)return'—';
+  if(bytes<1024)return bytes+'B';
+  if(bytes<1048576)return(bytes/1024).toFixed(0)+'KB';
+  return(bytes/1048576).toFixed(1)+'MB';
+}
+function fmtDate(iso){
+  if(!iso)return'';
+  return new Date(iso).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+}
+
+function handleFiles(files,source){
+  const pdfs=[...files].filter(f=>f.name.toLowerCase().endsWith('.pdf'));
+  let added=0;
+  pdfs.forEach(f=>{
+    if(lib.entries.find(e=>e.filename===f.name&&e.source===source))return;
+    const url=URL.createObjectURL(f);
+    lib.entries.push({id:uid(),name:f.name.replace(/\.pdf$/i,''),filename:f.name,size:f.size,source,notes:'',added:new Date().toISOString(),url});
+    added++;
+  });
+  save();renderLibrary();
+  if(added&&lib.entries.length>0)document.getElementById('dropZones').style.display='none';
+}
+
+function dzOver(e,id){e.preventDefault();document.getElementById(id).classList.add('dragover');}
+function dzLeave(id){document.getElementById(id).classList.remove('dragover');}
+function dzDrop(e,source,id){
+  e.preventDefault();dzLeave(id);
+  handleFiles(e.dataTransfer.files,source);
+}
+
+function getFiltered(){
+  const search=document.getElementById('searchInput').value.toLowerCase();
+  const source=document.getElementById('sourceFilter').value;
+  const sort=document.getElementById('sortSelect').value;
+  let entries=[...lib.entries];
+  if(source)entries=entries.filter(e=>e.source===source);
+  if(search)entries=entries.filter(e=>e.name.toLowerCase().includes(search)||(e.notes||'').toLowerCase().includes(search));
+  entries.sort((a,b)=>{
+    if(sort==='alpha-asc')return a.name.localeCompare(b.name);
+    if(sort==='alpha-desc')return b.name.localeCompare(a.name);
+    if(sort==='size-desc')return(b.size||0)-(a.size||0);
+    if(sort==='size-asc')return(a.size||0)-(b.size||0);
+    if(sort==='date-desc')return new Date(b.added||0)-new Date(a.added||0);
+    if(sort==='date-asc')return new Date(a.added||0)-new Date(b.added||0);
+    return 0;
+  });
+  return entries;
+}
+
+function renderStats(){
+  const total=lib.entries.length;
+  const on=lib.entries.filter(e=>e.source==='onenote').length;
+  const sn=lib.entries.filter(e=>e.source==='supernote').length;
+  const totalSize=lib.entries.reduce((s,e)=>s+(e.size||0),0);
+  document.getElementById('statsBar').innerHTML=`
+    <div class="stat-card"><div class="stat-value">${total}</div><div class="stat-label">Total notes</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:#1a5fa8;">${on}</div><div class="stat-label">OneNote</div></div>
+    <div class="stat-card"><div class="stat-value" style="color:#639922;">${sn}</div><div class="stat-label">Supernote</div></div>
+    <div class="stat-card"><div class="stat-value">${fmtSize(totalSize)}</div><div class="stat-label">Total size</div></div>`;
+}
+
+function srcColor(s){return s==='onenote'?'#1a5fa8':s==='supernote'?'#639922':'#8a93a2';}
+function srcLabel(s){return s==='onenote'?'OneNote':s==='supernote'?'Supernote':'Other';}
+
+function pdfCard(e){
+  const sc=srcColor(e.source);
+  return`<div class="pdf-card" onclick="openEntry('${e.id}')">
+    <div class="pdf-card-actions">
+      ${e.url?`<button class="card-btn" onclick="event.stopPropagation();openPdf('${e.id}')">Open</button>`:''}
+      <button class="card-btn" onclick="event.stopPropagation();editEntry('${e.id}')">Edit</button>
+    </div>
+    <div class="pdf-card-icon" style="background:linear-gradient(135deg,${sc},${sc}cc);">PDF</div>
+    <div class="pdf-card-name">${e.name}</div>
+    <span class="src-badge" style="background:${sc}18;color:${sc};">${srcLabel(e.source)}</span>
+    ${e.notes?`<div style="font-size:11px;color:var(--text3);margin-top:5px;line-height:1.4;">${e.notes.slice(0,55)}${e.notes.length>55?'…':''}</div>`:''}
+    <div class="pdf-card-meta">
+      <span class="pdf-card-size">${fmtSize(e.size)}</span>
+      <span class="pdf-card-date">${e.added?new Date(e.added).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):''}</span>
+    </div>
+  </div>`;
+}
+
+function pdfRow(e){
+  const sc=srcColor(e.source);
+  return`<div class="pdf-row" onclick="openEntry('${e.id}')">
+    <div class="pdf-row-icon" style="background:${sc};">PDF</div>
+    <div class="pdf-row-name">${e.name}</div>
+    <div class="pdf-row-source"><span class="src-badge" style="background:${sc}18;color:${sc};">${srcLabel(e.source)}</span></div>
+    <div class="pdf-row-size">${fmtSize(e.size)}</div>
+    <div class="pdf-row-date">${fmtDate(e.added)}</div>
+    <div class="pdf-row-actions">
+      ${e.url?`<button class="card-btn" onclick="event.stopPropagation();openPdf('${e.id}')">Open</button>`:''}
+      <button class="card-btn" onclick="event.stopPropagation();editEntry('${e.id}')">Edit</button>
+    </div>
+  </div>`;
+}
+
+function renderLibrary(){
+  renderStats();
+  const entries=getFiltered();
+  const sort=document.getElementById('sortSelect').value;
+  document.getElementById('countChip').textContent=`${entries.length} note${entries.length!==1?'s':''}`;
+  const container=document.getElementById('libraryContainer');
+
+  if(!lib.entries.length){container.innerHTML='';return;}
+  if(!entries.length){
+    container.innerHTML='<div class="empty-state"><div class="empty-icon">🔍</div><div class="empty-title">No results</div></div>';
+    return;
+  }
+
+  if(sort==='alpha-asc'||sort==='alpha-desc'){
+    const byLetter={};
+    entries.forEach(e=>{
+      const l=(e.name[0]||'#').toUpperCase();
+      const key=/[A-Z]/.test(l)?l:'#';
+      if(!byLetter[key])byLetter[key]=[];
+      byLetter[key].push(e);
+    });
+    const letters=Object.keys(byLetter).sort(sort==='alpha-desc'?(a,b)=>b.localeCompare(a):(a,b)=>a.localeCompare(b));
+    container.innerHTML=letters.map(letter=>`
+      <div class="alpha-group">
+        <div class="alpha-header">${letter}<span class="alpha-count">${byLetter[letter].length}</span></div>
+        ${viewMode==='grid'
+          ?`<div class="library-grid">${byLetter[letter].map(pdfCard).join('')}</div>`
+          :`<div class="library-list">${byLetter[letter].map(pdfRow).join('')}</div>`}
+      </div>`).join('');
+  } else {
+    container.innerHTML=viewMode==='grid'
+      ?`<div class="library-grid">${entries.map(pdfCard).join('')}</div>`
+      :`<div class="library-list">${entries.map(pdfRow).join('')}</div>`;
+  }
+}
+
+function setView(m){
+  viewMode=m;
+  document.getElementById('btnGrid').classList.toggle('active',m==='grid');
+  document.getElementById('btnList').classList.toggle('active',m==='list');
+  renderLibrary();
+}
+
+function openEntry(id){
+  const e=lib.entries.find(x=>x.id===id);
+  if(!e)return;
+  if(e.url)openPdf(id); else editEntry(id);
+}
+
+function openPdf(id){
+  const e=lib.entries.find(x=>x.id===id);
+  if(e&&e.url)window.open(e.url,'_blank');
+  else alert('This PDF is not available — please re-add it from your OneDrive folder.');
+}
+
+function editEntry(id){
+  editId=id;
+  const e=lib.entries.find(x=>x.id===id);
+  if(!e)return;
+  document.getElementById('eName').value=e.name;
+  document.getElementById('eSource').value=e.source;
+  document.getElementById('eNotes').value=e.notes||'';
+  document.getElementById('eMeta').textContent=`${fmtSize(e.size)} · Added ${fmtDate(e.added)}`;
+  document.getElementById('editModal').style.display='block';
+}
+function closeEdit(){document.getElementById('editModal').style.display='none';editId=null;}
+function saveEdit(){
+  const e=lib.entries.find(x=>x.id===editId);
+  if(!e)return;
+  e.name=document.getElementById('eName').value.trim()||e.name;
+  e.source=document.getElementById('eSource').value;
+  e.notes=document.getElementById('eNotes').value.trim();
+  save();closeEdit();renderLibrary();
+}
+function deleteEntry(){
+  lib.entries=lib.entries.filter(x=>x.id!==editId);
+  save();closeEdit();renderLibrary();
+  if(!lib.entries.length)document.getElementById('dropZones').style.display='grid';
+}
+
+load();renderLibrary();
+if(lib.entries.length)document.getElementById('dropZones').style.display='none';
+</script>
+</body>
+</html>
