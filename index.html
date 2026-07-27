@@ -1039,6 +1039,16 @@ async function importAI(actions){
 // ─── OKR TRACKER ─────────────────────────────────────────
 let okrYear = new Date().getFullYear();
 let editOkrId = null;
+let okrGroupsCollapsed = {};
+let okrAllExpanded = true;
+
+const OKR_GROUPS = [
+  {id:'cto', label:'CTO', subtitle:'Technology & Product', color:'#1a5fa8', fnIds:['tech']},
+  {id:'coo', label:'COO', subtitle:'Delivery & Operations / Finance', color:'#1e2d3d', fnIds:['delivery','finance']},
+  {id:'cpo', label:'CPO', subtitle:'People & HR', color:'#639922', fnIds:['people']},
+  {id:'cgo', label:'CGO', subtitle:'New Business & Marketing', color:'#E8450A', fnIds:['sales','marketing']},
+  {id:'cco', label:'CCO', subtitle:'Existing Accounts', color:'#533AB7', fnIds:['sales']}
+];
 let editOkrQData = null;
 const QUARTERS = ['Q1','Q2','Q3','Q4'];
 
@@ -1071,53 +1081,111 @@ function renderOkrs(){
     <div class="okr-year-tabs">
       ${years.map(y=>`<button class="filter-chip ${y===okrYear?'active':''}" onclick="setOkrYear(${y})">${y}</button>`).join('')}
     </div>
-    <button class="btn-primary" style="font-size:12px;padding:6px 14px;" onclick="openOkrModal(null)">+ Add OKR</button>
+    <div style="display:flex;gap:8px;">
+      <button class="btn-secondary" style="font-size:12px;padding:6px 12px;" onclick="toggleAllOkrGroups()">${okrAllExpanded?'Collapse all':'Expand all'}</button>
+      <button class="btn-primary" style="font-size:12px;padding:6px 14px;" onclick="openOkrModal(null)">+ Add OKR</button>
+    </div>
   </div>`;
 
   if(!yearOkrs.length){
     html += '<div class="empty-state">No OKRs for this year yet.<br>Tap + Add OKR to get started.</div>';
   } else {
-    FNS.forEach(f=>{
-      const fnOkrs = yearOkrs.filter(o=>o.fn===f.id);
-      if(!fnOkrs.length) return;
-      html += `<div class="okr-fn-block">
-        <div class="okr-fn-header" style="background:${f.color};">
-          <span class="okr-fn-title">${f.label}</span>
-          <span style="color:rgba(255,255,255,0.7);font-size:11px;">${fnOkrs.length} OKR${fnOkrs.length!==1?'s':''}</span>
+    OKR_GROUPS.forEach(group=>{
+      const groupOkrs = yearOkrs.filter(o=>{
+        if(o.fn===group.id) return true;
+        // Legacy mapping for existing seeded data
+        if(group.id==='cgo' && ((o.fn==='sales'&&o.id.startsWith('cgo')) || (o.fn==='marketing'&&o.id.startsWith('cgo')))) return true;
+        if(group.id==='cco' && o.fn==='sales'&&o.id.startsWith('cco')) return true;
+        if(group.id==='cto' && o.fn==='tech'&&o.id.startsWith('cto')) return true;
+        if(group.id==='coo' && (o.fn==='delivery'||o.fn==='finance')&&o.id.startsWith('coo')) return true;
+        if(group.id==='cpo' && o.fn==='people'&&o.id.startsWith('cpo')) return true;
+        return false;
+      });
+      if(!groupOkrs.length) return;
+      const isOpen = okrGroupsCollapsed[group.id]!==true;
+      const overallRags = groupOkrs.map(o=>{
+        const currentQ = `Q${Math.ceil((new Date().getMonth()+1)/3)}`;
+        return (o.quarters[currentQ]||{}).rag||'N';
+      });
+      const worstRag = overallRags.includes('R')?'R':overallRags.includes('A')?'A':overallRags.includes('G')?'G':'N';
+      const ragColor = worstRag==='R'?'var(--rag-r)':worstRag==='A'?'var(--rag-a)':worstRag==='G'?'var(--rag-g)':'var(--text3)';
+
+      html += `<div class="okr-fn-block" style="margin-bottom:12px;">
+        <div class="okr-fn-header" style="background:${group.color};cursor:pointer;" onclick="toggleOkrGroup('${group.id}')">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <span class="okr-fn-title" style="font-size:14px;">${group.label}</span>
+            <span style="color:rgba(255,255,255,0.65);font-size:11px;">${group.subtitle}</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span style="display:flex;align-items:center;gap:4px;">
+              <span style="width:8px;height:8px;border-radius:50%;background:${ragColor};display:inline-block;"></span>
+              <span style="color:rgba(255,255,255,0.7);font-size:11px;">${groupOkrs.length} OKR${groupOkrs.length!==1?'s':''}</span>
+            </span>
+            <span style="color:rgba(255,255,255,0.7);font-size:14px;">${isOpen?'▲':'▼'}</span>
+          </div>
         </div>
-        <div class="okr-fn-body">
-          ${fnOkrs.map(okr=>`
-            <div class="okr-row">
-              <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;">
-                <div class="okr-name">${okr.name}</div>
-                <button onclick="openOkrModal('${okr.id}')" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:12px;padding:0;flex-shrink:0;">&#9998;</button>
-              </div>
-              <div class="okr-quarters">
-                ${QUARTERS.map(q=>{
-                  const qd = okr.quarters[q]||{rag:'N',progress:0,notes:''};
-                  const pc = progressColor(qd.progress);
-                  const rc = qd.rag==='R'?'var(--rag-r)':qd.rag==='A'?'var(--rag-a)':qd.rag==='G'?'var(--rag-g)':'var(--text3)';
-                  return `<div class="okr-q" onclick="openOkrQModal('${okr.id}','${q}')">
-                    <div class="okr-q-label">${q}</div>
-                    <div style="width:10px;height:10px;border-radius:50%;background:${rc};margin:0 auto 6px;"></div>
-                    <div class="okr-q-progress">${qd.progress}%</div>
-                    <div class="okr-q-track"><div class="okr-q-fill" style="width:${qd.progress}%;background:${pc};"></div></div>
-                  </div>`;
-                }).join('')}
-              </div>
-            </div>`).join('')}
-          <button class="okr-add-btn" onclick="openOkrModalForFn('${f.id}')">+ Add OKR for ${f.label}</button>
-        </div>
+        ${isOpen?`<div class="okr-fn-body" style="padding:0;">
+          <table style="width:100%;border-collapse:collapse;">
+            <thead>
+              <tr style="background:var(--bg2);">
+                <th style="padding:8px 14px;font-size:11px;font-weight:600;color:var(--text3);text-align:left;text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid var(--border);width:40%;">Objective</th>
+                ${QUARTERS.map(q=>`<th style="padding:8px 10px;font-size:11px;font-weight:600;color:var(--text3);text-align:center;text-transform:uppercase;letter-spacing:0.05em;border-bottom:1px solid var(--border);">${q}</th>`).join('')}
+                <th style="width:32px;border-bottom:1px solid var(--border);"></th>
+              </tr>
+            </thead>
+            <tbody>
+              ${groupOkrs.map((okr,idx)=>{
+                const rowBg = idx%2===0?'var(--bg)':'var(--bg2)';
+                return `<tr style="background:${rowBg};">
+                  <td style="padding:12px 14px;font-size:13px;color:var(--text);border-bottom:1px solid var(--border);vertical-align:top;font-weight:500;line-height:1.4;">${okr.name}</td>
+                  ${QUARTERS.map(q=>{
+                    const qd = okr.quarters[q]||{rag:'N',progress:0,notes:''};
+                    const rc = qd.rag==='R'?'var(--rag-r)':qd.rag==='A'?'var(--rag-a)':qd.rag==='G'?'var(--rag-g)':'var(--text3)';
+                    const pc = progressColor(qd.progress);
+                    return `<td style="padding:10px;text-align:center;border-bottom:1px solid var(--border);vertical-align:top;cursor:pointer;min-width:80px;" onclick="openOkrQModal('${okr.id}','${q}')">
+                      <div style="width:10px;height:10px;border-radius:50%;background:${rc};margin:0 auto 5px;"></div>
+                      <div style="font-size:12px;font-weight:500;color:var(--text);margin-bottom:4px;">${qd.progress}%</div>
+                      <div style="height:4px;background:var(--bg3);border-radius:2px;overflow:hidden;margin-bottom:4px;">
+                        <div style="height:100%;width:${qd.progress}%;background:${pc};border-radius:2px;"></div>
+                      </div>
+                      ${qd.notes?`<div style="font-size:10px;color:var(--text3);line-height:1.3;text-align:left;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${qd.notes}">${qd.notes}</div>`:'<div style="font-size:10px;color:var(--text3);">—</div>'}
+                    </td>`;
+                  }).join('')}
+                  <td style="padding:8px;text-align:center;border-bottom:1px solid var(--border);vertical-align:top;">
+                    <button onclick="openOkrModal('${okr.id}')" style="background:none;border:none;cursor:pointer;color:var(--text3);font-size:13px;padding:2px 4px;" title="Edit OKR">&#9998;</button>
+                  </td>
+                </tr>`;
+              }).join('')}
+            </tbody>
+          </table>
+          <div style="padding:10px 14px;">
+            <button class="okr-add-btn" onclick="openOkrModalForGroup('${group.id}')">+ Add OKR for ${group.label}</button>
+          </div>
+        </div>`:''}
       </div>`;
     });
-
-    // Any OKRs for functions not in FNS
-    const otherOkrs = yearOkrs.filter(o=>!FNS.find(f=>f.id===o.fn));
-    if(otherOkrs.length){
-      html += `<div class="okr-fn-block"><div class="okr-fn-header" style="background:var(--text3);"><span class="okr-fn-title">Other</span></div><div class="okr-fn-body">${otherOkrs.map(okr=>`<div class="okr-row"><div class="okr-name">${okr.name}</div></div>`).join('')}</div></div>`;
-    }
   }
   document.getElementById('viewOkrs').innerHTML = html;
+}
+
+function toggleOkrGroup(id){
+  okrGroupsCollapsed[id] = !okrGroupsCollapsed[id];
+  okrAllExpanded = !Object.values(okrGroupsCollapsed).some(v=>v===true);
+  renderOkrs();
+}
+
+function toggleAllOkrGroups(){
+  okrAllExpanded = !okrAllExpanded;
+  OKR_GROUPS.forEach(g=>{ okrGroupsCollapsed[g.id] = !okrAllExpanded; });
+  renderOkrs();
+}
+
+function openOkrModalForGroup(groupId){
+  const group = OKR_GROUPS.find(g=>g.id===groupId);
+  if(!group) return;
+  openOkrModal(null);
+  const fnSel = document.getElementById('okrFn');
+  if(group.fnIds.length) fnSel.value = group.fnIds[0];
 }
 
 function setOkrYear(y){ okrYear=y; renderOkrs(); }
@@ -1128,7 +1196,7 @@ function openOkrModal(id){
   document.getElementById('okrModalTitle').textContent = okr ? 'Edit OKR' : 'Add OKR';
   document.getElementById('okrName').value = okr ? okr.name : '';
   const fnSel = document.getElementById('okrFn');
-  fnSel.innerHTML = FNS.map(f=>`<option value="${f.id}" ${okr&&okr.fn===f.id?'selected':''}>${f.label}</option>`).join('');
+  fnSel.innerHTML = OKR_GROUPS.map(g=>`<option value="${g.id}" ${okr&&okr.fn===g.id?'selected':''}>${g.label} — ${g.subtitle}</option>`).join('');
   const yearSel = document.getElementById('okrYear');
   const years = [new Date().getFullYear()-1, new Date().getFullYear(), new Date().getFullYear()+1];
   yearSel.innerHTML = years.map(y=>`<option value="${y}" ${okr&&okr.year===y?'selected':y===new Date().getFullYear()?'selected':''}>${y}</option>`).join('');
@@ -1146,9 +1214,10 @@ function closeOkrModal(){ document.getElementById('okrModal').style.display='non
 async function saveOkr(){
   const name = document.getElementById('okrName').value.trim();
   if(!name) return;
+  const selectedGroup = document.getElementById('okrFn').value;
   const okr = {
     id: editOkrId||uid(),
-    fn: document.getElementById('okrFn').value,
+    fn: selectedGroup,
     name,
     year: parseInt(document.getElementById('okrYear').value),
     quarters: editOkrId ? state.okrs.find(o=>o.id===editOkrId)?.quarters || {} : {}
