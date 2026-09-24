@@ -107,6 +107,13 @@ button,input,select,textarea{font-family:inherit;}
 .empty-icon{font-size:40px;margin-bottom:10px;}
 .empty-title{font-size:15px;font-weight:500;color:var(--text2);margin-bottom:6px;}
 
+
+/* Path hint */
+.path-hint{font-size:10px;color:var(--text3);margin-top:5px;padding:4px 8px;background:var(--bg);border-radius:4px;word-break:break-all;display:flex;align-items:center;gap:5px;cursor:pointer;transition:background 0.15s;}
+.path-hint:hover{background:var(--border);color:var(--text2);}
+.path-hint-icon{flex-shrink:0;font-size:11px;}
+.path-copied{color:var(--rag-g,#639922)!important;}
+
 @media(max-width:600px){
   .drop-zones{grid-template-columns:1fr;}
   .stats-bar{grid-template-columns:repeat(2,1fr);}
@@ -302,6 +309,10 @@ function pdfCard(e){
       <span class="pdf-card-size">${fmtSize(e.size)}</span>
       <span class="pdf-card-date">${e.added?new Date(e.added).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):''}</span>
     </div>
+    <div class="path-hint" onclick="event.stopPropagation();copyPath('${e.id}')" id="path_${e.id}" title="Click to copy file path">
+      <span class="path-hint-icon">📁</span>
+      <span>${e.source==='onenote'?'OneDrive/onenote/':'OneDrive/supernote/note/pdf/'}${e.filename}</span>
+    </div>
   </div>`;
 }
 
@@ -372,7 +383,7 @@ function openEntry(id){
 function openPdf(id){
   const e=lib.entries.find(x=>x.id===id);
   if(e&&e.url)window.open(e.url,'_blank');
-  else alert('This PDF is not available — please re-add it from your OneDrive folder.');
+  else { const e2=lib.entries.find(x=>x.id===id); const folder=e2&&e2.source==='onenote'?'OneDrive/onenote/':'OneDrive/supernote/note/pdf/'; alert('To open this file:\n\n1. Open the Notes Library directly from your Mac (double-click the file in Finder)\n   OR\n2. Find it in OneDrive at:\n   '+folder+(e2?e2.filename:'')); }
 }
 
 function editEntry(id){
@@ -398,6 +409,18 @@ function deleteEntry(){
   lib.entries=lib.entries.filter(x=>x.id!==editId);
   save();closeEdit();renderLibrary();
   if(!lib.entries.length)document.getElementById('dropZones').style.display='grid';
+}
+
+
+function copyPath(id){
+  const e=lib.entries.find(x=>x.id===id);
+  if(!e) return;
+  const folder = e.source==='onenote'?'OneDrive/onenote/':'OneDrive/supernote/note/pdf/';
+  const path = folder + e.filename;
+  navigator.clipboard.writeText(path).then(()=>{
+    const el = document.getElementById('path_'+id);
+    if(el){ el.classList.add('path-copied'); el.querySelector('span:last-child').textContent='Copied!'; setTimeout(()=>{ el.classList.remove('path-copied'); el.querySelector('span:last-child').textContent=path; },2000); }
+  }).catch(()=>{ prompt('File path (copy manually):',path); });
 }
 
 load();renderLibrary();
