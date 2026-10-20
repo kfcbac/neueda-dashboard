@@ -340,6 +340,39 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--navy);flex-shrink
 .mm-zoom-btn:hover{background:var(--bg2);}
 .mm-node-tooltip{position:absolute;background:var(--navy);color:#fff;padding:6px 10px;border-radius:var(--radius-sm);font-size:12px;pointer-events:none;z-index:10;white-space:nowrap;display:none;}
 
+/* Company RAG */
+.company-rollup{background:var(--navy);border-radius:var(--radius);padding:20px 24px;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;}
+.company-rollup-left{display:flex;flex-direction:column;gap:4px;}
+.company-rollup-title{font-size:18px;font-weight:600;color:#fff;}
+.company-rollup-sub{font-size:12px;color:rgba(255,255,255,0.5);}
+.company-rollup-note{font-size:13px;color:rgba(255,255,255,0.8);margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.15);max-width:600px;line-height:1.5;}
+.company-rollup-right{display:flex;flex-direction:column;align-items:center;gap:8px;}
+.company-rag-big{width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#fff;cursor:pointer;border:3px solid rgba(255,255,255,0.3);transition:transform 0.15s;}
+.company-rag-big:hover{transform:scale(1.05);}
+.company-rag-label{font-size:11px;color:rgba(255,255,255,0.5);}
+.company-fn-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-bottom:20px;}
+.company-fn-tile{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius);padding:16px;position:relative;overflow:hidden;}
+.company-fn-tile-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.company-fn-tile-name{font-size:13px;font-weight:600;color:var(--text);}
+.company-fn-tile-controls{display:flex;align-items:center;gap:8px;}
+.company-rag-btn-row{display:flex;gap:4px;}
+.company-rag-btn{width:28px;height:28px;border-radius:50%;border:2px solid transparent;cursor:pointer;font-size:11px;font-weight:700;color:#fff;transition:transform 0.1s,border-color 0.1s;}
+.company-rag-btn:hover{transform:scale(1.1);}
+.company-rag-btn.active{border-color:var(--text);}
+.company-trend-btn{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:3px 8px;font-size:14px;cursor:pointer;transition:background 0.15s;}
+.company-trend-btn:hover{background:var(--bg3);}
+.company-trend-btn.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+.company-fn-headline{width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;background:var(--bg);color:var(--text);outline:none;margin-bottom:10px;}
+.company-fn-headline:focus{border-color:var(--blue);}
+.company-fn-footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;}
+.company-fn-updated{font-size:10px;color:var(--text3);}
+.company-fn-link{font-size:11px;color:var(--blue);background:none;border:none;cursor:pointer;padding:0;text-decoration:none;}
+.company-fn-link:hover{text-decoration:underline;}
+.company-fn-save-btn{font-size:11px;padding:4px 12px;background:var(--navy);color:#fff;border:none;border-radius:var(--radius-sm);cursor:pointer;}
+.company-fn-save-btn:hover{background:var(--blue);}
+.company-rollup-edit{background:none;border:1px solid rgba(255,255,255,0.3);color:rgba(255,255,255,0.7);border-radius:var(--radius-sm);padding:4px 12px;font-size:12px;cursor:pointer;margin-top:4px;}
+.company-rollup-edit:hover{background:rgba(255,255,255,0.1);}
+
 /* Lock screen */
 .lock-screen{position:fixed;top:0;left:0;right:0;bottom:0;width:100%;height:100%;background:#1e2d3d;z-index:9999;display:flex;align-items:center;justify-content:center;}
 .lock-box{background:var(--bg);border-radius:16px;padding:32px 28px;width:320px;max-width:90vw;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,0.4);}
@@ -644,7 +677,8 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--navy);flex-shrink
 <div class="summary-bar" id="summaryBar"></div>
 
 <nav class="nav-tabs">
-  <button class="nav-tab active" onclick="setView('wheel',this)">Focus wheel</button>
+  <button class="nav-tab active" onclick="setView('company',this)">Company</button>
+  <button class="nav-tab" onclick="setView('wheel',this)">Focus wheel</button>
   <button class="nav-tab" onclick="setView('strategy',this)">Strategy</button>
   <button class="nav-tab" onclick="setView('actions',this)">Actions</button>
   <button class="nav-tab" onclick="setView('deadlines',this)">Deadlines</button>
@@ -659,7 +693,8 @@ input[type=checkbox]{width:16px;height:16px;accent-color:var(--navy);flex-shrink
 </nav>
 
 <div class="main">
-  <div id="viewWheel"></div>
+  <div id="viewCompany"></div>
+  <div id="viewWheel" style="display:none;"></div>
   <div id="viewStrategy" style="display:none;"></div>
   <div id="viewActions" style="display:none;"></div>
   <div id="viewDeadlines" style="display:none;"></div>
@@ -837,7 +872,7 @@ const TYPE_CLASSES={initiative:'type-initiative',okr:'type-okr',quarterly:'type-
 
 // ─── STATE ────────────────────────────────────────────────
 let state={rags:{},updates:{},actions:[],strategy:[]};
-let currentView='wheel';
+let currentView='company';
 let editFnId=null;
 let editStrategyId=null;
 let strategyFilter='all';
@@ -969,6 +1004,162 @@ function renderSummary(){
     <div class="summary-card"><div class="summary-label">Open actions</div><div class="summary-value">${open}</div></div>
     <div class="summary-card"><div class="summary-label">Strategy items</div><div class="summary-value">${strat}</div></div>`;
 }
+
+// ─── COMPANY RAG ──────────────────────────────────────────
+const TREND_LABELS={'up':'↑','flat':'→','down':'↓'};
+
+function loadCompanyState(){
+  try{
+    const s=localStorage.getItem('neueda_company_v1');
+    if(s)return JSON.parse(s);
+  }catch(e){}
+  return {
+    rag:'G',trend:'flat',note:'',updated:'',
+    fns: Object.fromEntries(FNS.map(f=>[f.id,{rag:'G',trend:'flat',headline:'',updated:''}]))
+  };
+}
+function saveCompanyState(cs){
+  try{localStorage.setItem('neueda_company_v1',JSON.stringify(cs));}catch(e){}
+}
+
+function renderCompany(){
+  const cs=loadCompanyState();
+  const ragColor=r=>r==='R'?'var(--rag-r)':r==='A'?'var(--rag-a)':'var(--rag-g)';
+  const ragLabel=r=>r==='R'?'At risk':r==='A'?'Attention':'On track';
+  const updatedLabel=d=>d?`Updated ${new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}`:'Not yet updated';
+
+  // Rollup header
+  let html=`<div class="company-rollup">
+    <div class="company-rollup-left">
+      <div class="company-rollup-title">Company overview</div>
+      <div class="company-rollup-sub">${updatedLabel(cs.updated)}</div>
+      ${cs.note?`<div class="company-rollup-note">${cs.note}</div>`:''}
+      <button class="company-rollup-edit" onclick="openCompanyRollupModal()">Edit overall note</button>
+    </div>
+    <div class="company-rollup-right">
+      <div class="company-rag-big" style="background:${ragColor(cs.rag)};" onclick="openCompanyRollupModal()" title="Edit company RAG">${cs.rag}</div>
+      <div class="company-rag-label">${ragLabel(cs.rag)} ${TREND_LABELS[cs.trend]||'→'}</div>
+    </div>
+  </div>`;
+
+  // Function tiles
+  html+=`<div class="company-fn-grid">`;
+  FNS.forEach(f=>{
+    const fd=cs.fns[f.id]||{rag:'G',trend:'flat',headline:'',updated:''};
+    html+=`<div class="company-fn-tile" id="cft-${f.id}">
+      <div style="width:4px;height:100%;position:absolute;left:0;top:0;background:${f.color};border-radius:var(--radius) 0 0 var(--radius);"></div>
+      <div style="padding-left:8px;">
+        <div class="company-fn-tile-header">
+          <div class="company-fn-tile-name">${f.label}</div>
+          <div class="company-fn-tile-controls">
+            <div class="company-rag-btn-row">
+              ${['G','A','R'].map(r=>`<button class="company-rag-btn ${fd.rag===r?'active':''}" style="background:${ragColor(r)};" onclick="setFnCompanyRag('${f.id}','${r}')" title="${ragLabel(r)}">${r}</button>`).join('')}
+            </div>
+            <div style="display:flex;gap:3px;">
+              ${['up','flat','down'].map(t=>`<button class="company-trend-btn ${fd.trend===t?'active':''}" onclick="setFnCompanyTrend('${f.id}','${t}')" title="${t}">${TREND_LABELS[t]}</button>`).join('')}
+            </div>
+          </div>
+        </div>
+        <input class="company-fn-headline" id="chl-${f.id}" type="text" placeholder="This week's headline for ${f.label}..." value="${(fd.headline||'').replace(/"/g,'&quot;')}" onblur="saveFnCompanyHeadline('${f.id}')">
+        <div class="company-fn-footer">
+          <span class="company-fn-updated">${updatedLabel(fd.updated)}</span>
+          <button class="company-fn-link" onclick="goToWheel('${f.id}')">View actions ↗</button>
+        </div>
+      </div>
+    </div>`;
+  });
+  html+=`</div>`;
+
+  document.getElementById('viewCompany').innerHTML=html;
+}
+
+function setFnCompanyRag(fnId,rag){
+  const cs=loadCompanyState();
+  if(!cs.fns[fnId])cs.fns[fnId]={rag:'G',trend:'flat',headline:'',updated:''};
+  cs.fns[fnId].rag=rag;
+  cs.fns[fnId].updated=new Date().toISOString();
+  saveCompanyState(cs);
+  renderCompany();
+  showToast('RAG updated');
+}
+function setFnCompanyTrend(fnId,trend){
+  const cs=loadCompanyState();
+  if(!cs.fns[fnId])cs.fns[fnId]={rag:'G',trend:'flat',headline:'',updated:''};
+  cs.fns[fnId].trend=trend;
+  cs.fns[fnId].updated=new Date().toISOString();
+  saveCompanyState(cs);
+  renderCompany();
+}
+function saveFnCompanyHeadline(fnId){
+  const val=document.getElementById('chl-'+fnId);
+  if(!val)return;
+  const cs=loadCompanyState();
+  if(!cs.fns[fnId])cs.fns[fnId]={rag:'G',trend:'flat',headline:'',updated:''};
+  cs.fns[fnId].headline=val.value;
+  cs.fns[fnId].updated=new Date().toISOString();
+  saveCompanyState(cs);
+}
+function goToWheel(fnId){
+  const btn=document.querySelector('.nav-tab:nth-child(2)');
+  setView('wheel',btn);
+  setTimeout(()=>openFnModal(fnId),200);
+}
+function openCompanyRollupModal(){
+  const cs=loadCompanyState();
+  const ragColor=r=>r==='R'?'var(--rag-r)':r==='A'?'var(--rag-a)':'var(--rag-g)';
+  const html=`<div class="modal-handle"></div>
+    <button class="modal-close" onclick="closeCompanyRollupModal()">&#10005;</button>
+    <div class="modal-title">Company overall status</div>
+    <div class="form-group"><label class="form-label">Overall RAG</label>
+      <div style="display:flex;gap:8px;margin-top:4px;">
+        ${['G','A','R'].map(r=>`<button id="crag-${r}" onclick="selectCRag('${r}')" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:2px solid ${cs.rag===r?'var(--text)':ragColor(r)};background:${ragColor(r)};color:#fff;font-weight:700;font-size:14px;cursor:pointer;">${r==='G'?'Green':r==='A'?'Amber':'Red'}</button>`).join('')}
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Trend</label>
+      <div style="display:flex;gap:8px;margin-top:4px;">
+        ${['up','flat','down'].map(t=>`<button id="ctrend-${t}" onclick="selectCTrend('${t}')" style="flex:1;padding:10px;border-radius:var(--radius-sm);border:2px solid ${cs.trend===t?'var(--navy)':'var(--border)'};background:${cs.trend===t?'var(--navy)':'var(--bg2)'};color:${cs.trend===t?'#fff':'var(--text2)'};font-size:18px;cursor:pointer;">${TREND_LABELS[t]}</button>`).join('')}
+      </div>
+    </div>
+    <div class="form-group"><label class="form-label">Overall note (optional)</label>
+      <textarea class="form-input" id="cNoteInput" rows="3" placeholder="Overall company narrative for this week...">${cs.note||''}</textarea>
+    </div>
+    <div class="btn-row">
+      <button class="btn-secondary" onclick="closeCompanyRollupModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveCompanyRollup()">Save</button>
+    </div>`;
+  document.getElementById('fnModalContent').innerHTML=html;
+  document.getElementById('fnModal').style.display='block';
+  window._cRag=cs.rag;window._cTrend=cs.trend;
+}
+function selectCRag(r){
+  window._cRag=r;
+  document.querySelectorAll('[id^="crag-"]').forEach(b=>{
+    const isSelected=b.id==='crag-'+r;
+    b.style.border=`2px solid ${isSelected?'var(--text)':b.style.background}`;
+  });
+}
+function selectCTrend(t){
+  window._cTrend=t;
+  ['up','flat','down'].forEach(x=>{
+    const b=document.getElementById('ctrend-'+x);
+    const active=x===t;
+    b.style.border=`2px solid ${active?'var(--navy)':'var(--border)'}`;
+    b.style.background=active?'var(--navy)':'var(--bg2)';
+    b.style.color=active?'#fff':'var(--text2)';
+  });
+}
+function saveCompanyRollup(){
+  const cs=loadCompanyState();
+  cs.rag=window._cRag||cs.rag;
+  cs.trend=window._cTrend||cs.trend;
+  cs.note=document.getElementById('cNoteInput').value;
+  cs.updated=new Date().toISOString();
+  saveCompanyState(cs);
+  closeFnModal();
+  renderCompany();
+  showToast('Company status saved');
+}
+function closeCompanyRollupModal(){closeFnModal();}
 
 // ─── WHEEL ────────────────────────────────────────────────
 function drawWheel(){
@@ -1121,7 +1312,8 @@ function renderDeadlines(){
 // ─── MASTER RENDER ────────────────────────────────────────
 function render(){
   renderSummary();
-  if(currentView==='wheel')renderWheel();
+  if(currentView==='company')renderCompany();
+  else if(currentView==='wheel')renderWheel();
   else if(currentView==='strategy')renderStrategy();
   else if(currentView==='actions')renderActions();
   else if(currentView==='okrs')renderOkrs();
@@ -1137,10 +1329,10 @@ function setView(v,btn){
   currentView=v;
   document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
   btn.classList.add('active');
-  ['wheel','strategy','actions','deadlines','okrs','clients','agenda','reading','mindmap','timeline','summary'].forEach(x=>{
+  ['company','wheel','strategy','actions','deadlines','okrs','clients','agenda','reading','mindmap','timeline','summary'].forEach(x=>{
     document.getElementById('view'+x.charAt(0).toUpperCase()+x.slice(1)).style.display=x===v?'block':'none';
   });
-  document.getElementById('fab').style.display=(v==='deadlines'||v==='okrs'||v==='reading'||v==='summary'||v==='timeline'||v==='mindmap')?'none':'flex';
+  document.getElementById('fab').style.display=(v==='company'||v==='deadlines'||v==='okrs'||v==='reading'||v==='summary'||v==='timeline'||v==='mindmap')?'none':'flex';
   if(v==='clients'){document.getElementById('fab').style.display='flex';document.getElementById('fab').onclick=()=>openClientModal(null);}
   else if(v==='agenda'){document.getElementById('fab').style.display='flex';document.getElementById('fab').onclick=()=>openAgendaModal(null);}
   else document.getElementById('fab').onclick=()=>handleFab();
@@ -2559,7 +2751,7 @@ async function deleteTlTask(){
 
 // ─── MIND MAPS ────────────────────────────────────────────
 const MM_MAX = 10;
-const MM_COLOURS = ['#1a5fa8','#E8450A','#639922','#EF9F27','#533AB7','#0F6E56','#993C1D','#1e2d3d','#D63B6A','#2196A8'];
+const MM_COLOURS = ['#E24B4A','#EF9F27','#639922','#6B7280','#C6A24A'];
 let mmMaps = [];
 let mmCurrentId = null;
 let mmEditNodeId = null;
